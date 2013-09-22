@@ -30,6 +30,11 @@ raw_message = email.message_from_string( raw )
 from_addr = raw_message['From']
 to_addrs = sys.argv[1:]
 
+encrypted_to_addrs = list()
+if raw_message.has_key('X-GPG-Encrypt-Cc'):
+	encrypted_to_addrs.extend( [e[1] for e in email.utils.getaddresses([raw_message['X-GPG-Encrypt-Cc']])] )
+	del raw_message['X-GPG-Encrypt-Cc']
+
 def send_msg( message, recipients = None ):
 	if recipients == None:
 		recipients = to_addrs
@@ -39,11 +44,11 @@ def send_msg( message, recipients = None ):
 	smtp.sendmail( from_addr, recipients, message.as_string() )
 
 def encrypt_payload( payload, gpg_to_cmdline ):
-	gpg = GnuPG.GPGEncryptor( cfg['gpg']['keyhome'], gpg_to_cmdline, payload.get_content_charset() )
 	raw_payload = payload.get_payload(decode=True)
-	gpg.update( raw_payload )
 	if "-----BEGIN PGP MESSAGE-----" in raw_payload and "-----END PGP MESSAGE-----" in raw_payload:
 		return payload
+	gpg = GnuPG.GPGEncryptor( cfg['gpg']['keyhome'], gpg_to_cmdline, payload.get_content_charset() )
+	gpg.update( raw_payload )
 	payload.set_payload( gpg.encrypt() )
 	
 	isAttachment = payload.get_param( 'attachment', None, 'Content-Disposition' ) is not None
@@ -84,7 +89,16 @@ def get_msg( message ):
 keys = GnuPG.public_keys( cfg['gpg']['keyhome'] )
 gpg_to = list()
 ungpg_to = list()
-			
+
+for enc in encrypted_to_addrs:
+	domain = enc.split('@')[1]
+	if domain in cfg['default']['domains'].split(','):
+		if enc in keys:
+			gpg_to.append( (enc, enc) )
+		elif cfg.has_key('keymap') and cfg['keymap'].has_key(enc):
+			gpg_to.append( (enc, cfg['keymap'][enc]) )
+		else:
+			ungpg_to.append(enc);
 for to in to_addrs:
 	domain = to.split('@')[1]
 	if domain in cfg['default']['domains'].split(','):
