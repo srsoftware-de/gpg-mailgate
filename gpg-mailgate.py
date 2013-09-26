@@ -45,15 +45,15 @@ def encrypt_payload( payload, gpg_to_cmdline ):
 	gpg = GnuPG.GPGEncryptor( cfg['gpg']['keyhome'], gpg_to_cmdline, payload.get_content_charset() )
 	gpg.update( raw_payload )
 	payload.set_payload( gpg.encrypt() )
-	
+
 	isAttachment = payload.get_param( 'attachment', None, 'Content-Disposition' ) is not None
-	
+
 	if isAttachment:
 		filename = payload.get_filename()
-	
+
 		if filename:
 			pgpFilename = filename + ".pgp"
-			
+
 			if payload.get('Content-Disposition') is not None:
 				payload.set_param( 'filename', pgpFilename, 'Content-Disposition' )
 			if payload.get('Content-Type') is not None:

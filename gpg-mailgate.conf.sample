@@ -24,6 +24,15 @@ file = /tmp/gpg-mailgate.log
 host = 127.0.0.1
 port = 10028
 
+[database]
+# uncomment the settings below if you want
+#  to read keys from a gpg-mailgate-web database
+#enabled = yes
+#name = gpgmw
+#host = localhost
+#username = gpgmw
+#password = 
+
 [keymap]
 # You can find these by running the following command:
 #	gpg --list-keys --keyid-format long user@example.com

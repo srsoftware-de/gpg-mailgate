@@ -1,0 +1,30 @@
+gpg-mailgate-web
+----------------
+
+gpg-mailgate-web is a web interface designed to allow any web user
+  to upload their PGP public key and then have all mail sent from
+  your mail server be encrypted. (Note: this is not meant for email
+  authentication, only encryption.)
+
+After submitting their key to a web form, the user will be required
+  to confirm their email address. A cron script will register the
+  public key with gpg-mailgate (keyhome_only must be set to no
+  currently, which is the default) after email confirmation. From
+  then on, email to the specified address will be encrypted with
+  the public key.
+
+Installation instructions:
+
+  1) Install gpg-mailgate.
+  2) Create a MySQL database for gpg-mailgate.
+    a) Schema file is located in schema.sql
+    b) Database name and account goes in /etc/gpg-mailgate.conf (and set enabled = yes)
+  3) Copy the contents of public_html to your web directory.
+  4) Move config.sample.php to config.php and edit the configuration file.
+  5) Copy cron.py to /usr/local/bin/gpgmw-cron.py and set up a cron job
+    a) Create /etc/cron.d/gpgmw with the contents:
+    */3 * * * * gpgmap /usr/bin/python /usr/local/bin/gpgmw-cron.py > /dev/null
+     (replace gpgmap with the owner of the gpg-mailgate GPG home directory)
+  6) Ensure that cron is working and test your new gpg-mailgate-web installation!
+
+Any issues should be reported to https://github.com/uakfdotb/gpg-mailgate
