@@ -71,6 +71,8 @@ function requestPGP($email, $key) {
 
 //returns false on failure or true on success
 function confirmPGP($email, $confirm) {
+	require_once(includePath() . "/lock.php");
+
 	if(!lockAction('confirmpgp')) {
 		return "try again later";
 	}
