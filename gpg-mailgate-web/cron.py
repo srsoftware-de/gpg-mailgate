@@ -41,6 +41,9 @@ if cfg.has_key('database') and cfg['database'].has_key('enabled') and cfg['datab
 			else:
 				cursor.execute("DELETE FROM gpgmw_keys WHERE id = %s", (row[1],)) # delete key
 				appendLog('Import confirmation failed for <' + row[2] + '>')
+		else:
+			# delete key so we don't continue processing it
+			cursor.execute("DELETE FROM gpgmw_keys WHERE id = %s", (row[1],))
 
 		connection.commit()
 
