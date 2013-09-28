@@ -2,7 +2,7 @@ gpg-mailgate-web
 ----------------
 
 gpg-mailgate-web is a web interface designed to allow any web user
-  to upload their PGP public key and then have all mail sent from
+  to upload their PGP public key and then have all mail sent via
   your mail server be encrypted. (Note: this is not meant for email
   authentication, only encryption.)
 
@@ -12,6 +12,11 @@ After submitting their key to a web form, the user will be required
   currently, which is the default) after email confirmation. From
   then on, email to the specified address will be encrypted with
   the public key.
+
+gpg-mailgate-web is useful for two purposes: for a transparent
+  PGP encryption layer in front of any web application, or simple as
+  a web interface for gpg-mailgate so that users on your mail server
+  can easily upload and change their PGP keys.
 
 Note that all processing relating to the mail server is done via the
   cron script. This means that gpg-mailgate and the gpgmw cron can
