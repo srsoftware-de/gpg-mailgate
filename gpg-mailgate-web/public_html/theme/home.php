@@ -27,7 +27,7 @@
 <p><b><i><?= htmlspecialchars($message) ?></i></b></p>
 <? } ?>
 
-<p>Use the form below to submit an ASCII-armored PGP public key. After submission, you will receive an email asking you to confirm your email address. Note that this is not a keyserver.</p>
+<p>Use the form below to submit an ASCII-armored PGP public key. After submission, you will receive an email asking you to confirm your email address. Once confirmation is completed, mail sent to your email address via our mail server will be encrypted with your PGP public key.</p>
 
 <form method="POST">
 <table>
