@@ -31,6 +31,7 @@ $config['email_from'] = 'gpg-mailgate-web@example.com';
 $config['email_subject_requestpgp'] = 'Confirm your email address';
 $config['site_url'] = 'http://example.com/gpgmw';
 $config['site_title'] = 'PGP key management';
+$config['language'] = 'english';
 $config['debug'] = false;
 $config['mail_smtp'] = false;
 $config['mail_smtp_host'] = 'localhost';

@@ -21,6 +21,7 @@
 */
 
 require_once("include/config.php");
+require_once("include/language.php");
 require_once("include/common.php");
 require_once("include/dbconnect.php");
 require_once("include/pgp.php");
@@ -29,9 +30,9 @@ if(isset($_POST['email']) && isset($_POST['key'])) {
 	$result = requestPGP($_POST['email'], $_POST['key']);
 
 	if($result === true) {
-		get_page("home", array('message' => 'Key submission successful. Please check your email to confirm your email address.'));
+		get_page("home", array('message' => $lang['submit_success']));
 	} else {
-		get_page("home", array('message' => 'Error: ' . $result . '.'));
+		get_page("home", array('message' => $result));
 	}
 } else {
 	get_page("home");

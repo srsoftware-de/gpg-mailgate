@@ -20,22 +20,6 @@
 
 */
 
-require_once("include/config.php");
-require_once("include/language.php");
-require_once("include/common.php");
-require_once("include/dbconnect.php");
-require_once("include/pgp.php");
-
-if(isset($_REQUEST['email']) && isset($_REQUEST['confirm'])) {
-	$result = confirmPGP($_REQUEST['email'], $_REQUEST['confirm']);
-
-	if($result === true) {
-		get_page("home", array('message' => $lang['confirm_success']));
-	} else {
-		get_page("home", array('message' => $lang['confirm_fail_general']));
-	}
-} else {
-	get_page("home");
-}
+require_once(dirname(__FILE__) . '/../language/' . $config['language'] . '.php');
 
 ?>

@@ -71,6 +71,7 @@ function get_page($page, $args = array()) {
 	//let pages use some variables
 	extract($args);
 	$config = $GLOBALS['config'];
+	$lang = $GLOBALS['lang'];
 
 	$basePath = basePath();
 

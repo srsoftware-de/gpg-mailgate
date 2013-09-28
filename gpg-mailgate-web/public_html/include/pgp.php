@@ -23,22 +23,22 @@
 //returns true on success or error message on failure
 function requestPGP($email, $key) {
 	require_once(includePath() . "/lock.php");
-	global $config;
+	global $config, $lang;
 
 	if(!checkLock('requestpgp')) {
-		return "please wait a bit before trying again";
+		return $lang['submit_error_trylater'];
 	}
 
 	if(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-		return "invalid email address";
+		return $lang['submit_error_bademail'];
 	}
 
 	if(strlen($email) > 256 || strlen($key) > 1024 * 32) {
-		return "email address or key too long";
+		return $lang['submit_error_toolong'];
 	}
 
 	if(!isAscii($key)) {
-		return "only keys encoded with ASCII armor are accepted (gpg --armor)";
+		return $lang['submit_error_nonascii'];
 	}
 
 	//housekeeping
@@ -50,7 +50,7 @@ function requestPGP($email, $key) {
 
 	if($row = $result->fetch()) {
 		if($row[0] < 24) {
-			return "there is already a key in the queue for this email address; please wait twenty-four hours between submitting keys, or confirm the previous key and then resubmit";
+			return $lang['submit_error_alreadyqueue'];
 		} else {
 			databaseQuery('DELETE FROM gpgmw_keys WHERE id = ?', array($row[1]));
 		}
@@ -61,17 +61,18 @@ function requestPGP($email, $key) {
 		require_once(includePath() . "/gpg.php");
 
 		if(!verifyPGPKey($key, $email)) {
-			return "your key does not appear to be valid (ensure ASCII armor is enabled and that the email address entered matches the email address of the key)";
+			return $lang['submit_error_badkey'];
 		}
 	}
 
 	//well, it looks good, let's submit it
 	lockAction('requestpgp');
 	$confirm = uid(32);
-	$result = gpgmw_mail($config['email_subject_requestpgp'], "Please confirm your email address to complete the submission process. You can do so by clicking the link below\n\n{$config['site_url']}/confirm.php?email=" . urlencode($email) . "&confirm=$confirm\n\nThanks,\ngpg-mailgate-web", $email);
+	$confirm_link = "{$config['site_url']}/confirm.php?email=" . urlencode($email) . "&confirm=$confirm";
+	$result = gpgmw_mail($config['email_subject_requestpgp'], sprintf($lang['mail_confirm'], $confirm_link), $email);
 
 	if(!$result) {
-		return "failed to send email";
+		return $lang['submit_error_emailfail'];
 	}
 
 	databaseQuery("INSERT INTO gpgmw_keys (email, publickey, confirm) VALUES (?, ?, ?)", array($email, $key, $confirm));
@@ -83,7 +84,7 @@ function confirmPGP($email, $confirm) {
 	require_once(includePath() . "/lock.php");
 
 	if(!lockAction('confirmpgp')) {
-		return "try again later";
+		return false;
 	}
 
 	$result = databaseQuery("SELECT id FROM gpgmw_keys WHERE confirm = ? AND email = ?", array($confirm, $email));

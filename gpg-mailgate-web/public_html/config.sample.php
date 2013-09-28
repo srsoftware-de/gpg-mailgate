@@ -40,6 +40,9 @@ $config['site_url'] = 'http://example.com/gpgmw';
 //title of the website (displayed on home page)
 $config['site_title'] = 'PGP key management';
 
+//language file to use (see language subdirectory)
+$config['language'] = 'english';
+
 //whether debug mode should be enabled
 $config['debug'] = false;
 

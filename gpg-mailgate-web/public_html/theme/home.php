@@ -27,20 +27,20 @@
 <p><b><i><?= htmlspecialchars($message) ?></i></b></p>
 <? } ?>
 
-<p>Use the form below to submit an ASCII-armored PGP public key. After submission, you will receive an email asking you to confirm your email address. Once confirmation is completed, mail sent to your email address via our mail server will be encrypted with your PGP public key.</p>
+<p><?= $lang['home_text'] ?></p>
 
 <form method="POST">
 <table>
 <tr>
-	<td>Your email address (must match key)</td>
+	<td><?= $lang['home_emaildesc'] ?></td>
 	<td><input type="text" name="email" /></td>
 </tr>
 <tr>
-	<td>ASCII-armored PGP public key</td>
+	<td><?= $lang['home_keydesc'] ?></td>
 	<td><textarea name="key" rows="10" cols="80"></textarea></td>
 </tr>
 </table>
-<input type="submit" value="Submit key" />
+<input type="submit" value="<?= $lang['home_submitkey'] ?>" />
 </form>
 
-<p><a href="https://github.com/uakfdotb/gpg-mailgate">gpg-mailgate and gpg-mailgate-web</a> are released under the <a href="https://www.gnu.org/licenses/lgpl-3.0.txt">GNU LGPL</a>.</p>
+<p><?= $lang['home_footer'] ?></p>
