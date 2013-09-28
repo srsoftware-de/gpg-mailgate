@@ -53,6 +53,7 @@ $config['debug'] = false;
 $config['mail_smtp'] = false;
 
 //SMTP settings, if mail_smtp is enabled
+//this requires Net_SMTP from http://pear.php.net/package/Net_SMTP/ to be installed
 $config['mail_smtp_host'] = 'localhost';
 $config['mail_smtp_port'] = 25;
 $config['mail_smtp_username'] = 'gpgmw';
