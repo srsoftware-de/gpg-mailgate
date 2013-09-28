@@ -20,7 +20,7 @@
 
 */
 
-require_once("config.php");
+require_once("include/config.php");
 require_once("include/common.php");
 require_once("include/dbconnect.php");
 require_once("include/pgp.php");

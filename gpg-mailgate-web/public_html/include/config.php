@@ -20,21 +20,12 @@
 
 */
 
-require_once("include/config.php");
-require_once("include/common.php");
-require_once("include/dbconnect.php");
-require_once("include/pgp.php");
+require_once(dirname(__FILE__) . '/../config.default.php');
 
-if(isset($_POST['email']) && isset($_POST['key'])) {
-	$result = requestPGP($_POST['email'], $_POST['key']);
-
-	if($result === true) {
-		get_page("home", array('message' => 'Key submission successful. Please check your email to confirm your email address.'));
-	} else {
-		get_page("home", array('message' => 'Error: ' . $result . '.'));
-	}
+if(file_exists(dirname(__FILE__) . '/../config.php')) {
+	require_once(dirname(__FILE__) . '/../config.php');
 } else {
-	get_page("home");
+	die("Server configuration error: config.php does not exist.");
 }
 
 ?>

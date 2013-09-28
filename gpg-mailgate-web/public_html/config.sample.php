@@ -20,8 +20,6 @@
 
 */
 
-$config = array();
-
 //
 // GENERAL SITE SETTINGS
 //
