@@ -43,4 +43,4 @@
 <input type="submit" value="Submit key" />
 </form>
 
-<p><a href="https://github.com/uakfdotb/gpg-mailgate/tree/www">gpg-mailgate-web</a> is released under the <a href="https://www.gnu.org/licenses/lgpl-3.0.txt">GNU LGPL</a>.</p>
+<p><a href="https://github.com/uakfdotb/gpg-mailgate">gpg-mailgate and gpg-mailgate-web</a> are released under the <a href="https://www.gnu.org/licenses/lgpl-3.0.txt">GNU LGPL</a>.</p>
