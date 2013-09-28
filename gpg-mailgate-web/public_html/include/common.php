@@ -99,6 +99,21 @@ function secure_random() {
 	return hexdec(bin2hex(secure_random_bytes(3)));
 }
 
+function recursiveDelete($dirPath) {
+	foreach(
+		new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator(
+				$dirPath, FilesystemIterator::SKIP_DOTS
+			),
+			RecursiveIteratorIterator::CHILD_FIRST
+		)
+		as $path) {
+		$path->isFile() ? unlink($path->getPathname()) : rmdir($path->getPathname());
+	}
+
+	rmdir($dirPath);
+}
+
 function gpgmw_mail($subject, $body, $to) { //returns true=ok, false=notok
 	$config = $GLOBALS['config'];
 	$from = filter_var($config['email_from'], FILTER_SANITIZE_EMAIL);

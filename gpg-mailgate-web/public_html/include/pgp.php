@@ -56,6 +56,15 @@ function requestPGP($email, $key) {
 		}
 	}
 
+	//if PGP key verification is enabled, do it
+	if($config['pgpverify_enable']) {
+		require_once(includePath() . "/gpg.php");
+
+		if(!verifyPGPKey($key, $email)) {
+			return "your key does not appear to be valid (ensure ASCII armor is enabled and that the email address entered matches the email address of the key)";
+		}
+	}
+
 	//well, it looks good, let's submit it
 	lockAction('requestpgp');
 	$confirm = uid(32);

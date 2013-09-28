@@ -42,6 +42,9 @@ $config['site_url'] = 'http://example.com/gpgmw';
 //title of the website (displayed on home page)
 $config['site_title'] = 'PGP key management';
 
+//whether debug mode should be enabled
+$config['debug'] = false;
+
 //
 // MAIL SETTINGS
 //
@@ -70,6 +73,27 @@ $config['db_username'] = 'gpgmw';
 
 //database password
 $config['db_password'] = '';
+
+//
+// PGP VERIFICATION SETTINGS
+//
+
+//whether to enable immediate verification of PGP keys
+// keys will always be verified with the email address in our cron job
+// but this will enable verification from the web interface before email confirmation
+//for this to work, Crypt_GPG from http://pear.php.net/Crypt_GPG must be installed
+// (as well as any of its dependencies), and pgpverify_tmpdir must be set
+$config['pgpverify_enable'] = false;
+
+//a temporary directory to use for PGP verification, without trailing slash
+// gpgmw will create subdirectories from here to use as temporary gpg home directories
+// these directories will (should) be deleted immediately after use
+$config['pgpverify_tmpdir'] = '/tmp';
+
+//whether to allow blank "keys"
+// this is useful to allow users to delete their key from the keystore
+// if they no longer want encryption
+$config['pgpverify_allowblank'] = true;
 
 //
 // LOCK SETTINGS
