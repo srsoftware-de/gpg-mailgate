@@ -13,6 +13,11 @@ After submitting their key to a web form, the user will be required
   then on, email to the specified address will be encrypted with
   the public key.
 
+Note that all processing relating to the mail server is done via the
+  cron script. This means that gpg-mailgate and the gpgmw cron can
+  be installed on a different server from the web server. The MySQL
+  database must be shared between the two applications though.
+
 Installation instructions:
 
   1) Install gpg-mailgate.
