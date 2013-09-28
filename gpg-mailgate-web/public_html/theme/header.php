@@ -21,24 +21,8 @@
 */
 ?>
 
-<h1><?= $config['site_title'] ?></h1>
-
-<? if(!empty($message)) { ?>
-<p><b><i><?= htmlspecialchars($message) ?></i></b></p>
-<? } ?>
-
-<p>Use the form below to submit an ASCII-armored PGP public key. After submission, you will receive an email asking you to confirm your email address. Note that this is not a keyserver.</p>
-
-<form method="POST">
-<table>
-<tr>
-	<td>Your email address (must match key)</td>
-	<td><input type="text" name="email" /></td>
-</tr>
-<tr>
-	<td>ASCII-armored PGP public key</td>
-	<td><textarea name="key" rows="10" cols="80"></textarea></td>
-</tr>
-</table>
-<input type="submit" value="Submit key" />
-</form>
+<html>
+<head>
+<title>gpg-mailgate-web</title>
+</head>
+<body>
