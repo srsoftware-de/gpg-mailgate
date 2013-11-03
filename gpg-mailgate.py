@@ -27,12 +27,7 @@ import re
 import GnuPG
 import smtplib
 import sys
-
-def appendLog(msg):
-	if cfg.has_key('logging') and cfg['logging'].has_key('file'):
-		log = open(cfg['logging']['file'], 'a')
-		log.write(msg + "\n")
-		log.close()
+import syslog
 
 # Read configuration from /etc/gpg-mailgate.conf
 _cfg = RawConfigParser()
@@ -43,6 +38,17 @@ for sect in _cfg.sections():
 	for (name, value) in _cfg.items(sect):
 		cfg[sect][name] = value
 
+def log(msg):
+	if cfg.has_key('logging') and cfg['logging'].has_key('file'):
+		if cfg['logging']['file'] == "syslog":
+			syslog.syslog(syslog.LOG_INFO | syslog.LOG_MAIL, msg)
+		else:
+			logfile = open(cfg['logging']['file'], 'a')
+			logfile.write(msg + "\n")
+			logfile.close()
+
+verbose=cfg.has_key('logging') and cfg['logging'].has_key('verbose') and cfg['logging']['verbose'] == 'yes'
+
 # Read e-mail from stdin
 raw = sys.stdin.read()
 raw_message = email.message_from_string( raw )
@@ -52,7 +58,7 @@ to_addrs = sys.argv[1:]
 def send_msg( message, recipients = None ):
 	if recipients == None:
 		recipients = to_addrs
-	appendLog("Sending email to: <%s>" % '> <'.join( recipients ))
+	log("Sending email to: <%s>" % '> <'.join( recipients ))
 	relay = (cfg['relay']['host'], int(cfg['relay']['port']))
 	smtp = smtplib.SMTP(relay[0], relay[1])
 	smtp.sendmail( from_addr, recipients, message.as_string() )
@@ -110,18 +116,22 @@ for to in to_addrs:
 	elif cfg.has_key('keymap') and cfg['keymap'].has_key(to):
 		gpg_to.append( (to, cfg['keymap'][to]) )
 	else:
+		if verbose:
+			log("Recipient (%s) not in domain list." % to)
 		ungpg_to.append(to)
 
 if gpg_to == list():
 	if cfg['default'].has_key('add_header') and cfg['default']['add_header'] == 'yes':
 		raw_message['X-GPG-Mailgate'] = 'Not encrypted, public key not found'
+	if verbose:
+		log("No encrypted recipients.")
 	send_msg( raw_message )
 	exit()
 
 if ungpg_to != list():
 	send_msg( raw_message, ungpg_to )
 
-appendLog("Encrypting email to: %s" % ' '.join( map(lambda x: x[0], gpg_to) ))
+log("Encrypting email to: %s" % ' '.join( map(lambda x: x[0], gpg_to) ))
 
 if cfg['default'].has_key('add_header') and cfg['default']['add_header'] == 'yes':
 	raw_message['X-GPG-Mailgate'] = 'Encrypted by GPG Mailgate'

@@ -14,8 +14,9 @@ keymap_only = no
 keyhome = /var/gpg/.gnupg
 
 [logging]
-# file to log to
+# For logging to syslog. 'file = syslog', otherwise use path to the file.
 file = /tmp/gpg-mailgate.log
+#verbose = yes
 
 [relay]
 # the relay settings to use for Postfix
