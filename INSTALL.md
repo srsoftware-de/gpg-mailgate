@@ -9,7 +9,7 @@
  5. Add the following to the end of `/etc/postfix/master.cf`
 
         gpg-mailgate    unix    -   n   n   -   -   pipe
-            flags= user=nobody argv=/usr/local/bin/gpg-mailgate.py ${recipient}
+            flags= user=gpgmap argv=/usr/local/bin/gpg-mailgate.py ${recipient}
 
         127.0.0.1:10028 inet    n   -   n   -   10  smtpd
             -o content_filter=
