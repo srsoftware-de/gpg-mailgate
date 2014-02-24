@@ -43,3 +43,6 @@ these example commands:
   - `/home/youruser/public.key` can be deleted after importation
   - Confirm that it's working: `sudo -u gpgmap /usr/bin/gpg --list-keys --homedir=/var/gpg/.gnupg`
   - Use `keyhome = /var/gpg/.gnupg` in `gpg-mailgate.conf`
+  - Change the `user=nobody` to `user=gpgmap` in the gpg-mailgate flags line in `/etc/postfix/master.cf`
+
+    `flags= user=gpgmap argv=/usr/local/bin/gpg-mailgate.py ${recipient}`
