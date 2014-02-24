@@ -21,7 +21,7 @@
 $PGP_COMMAND="gpg";
 
 //! A dir where the PHP script has write access
-$PGP_HOME="/var/www/vhosts/mailflux.net/.phkp";
+$PGP_HOME="/var/gpg/.phkp";
 
 //! The maximum size (in characters) of a submitted key.
 //! Set to '0' to disable receiving of keys, and '-1' for no limit.
