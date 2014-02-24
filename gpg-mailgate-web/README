@@ -53,7 +53,7 @@ Any issues should be reported to https://github.com/uakfdotb/gpg-mailgate
 
       $SERVER["socket"] == ":11371" {
           server.document-root = "/var/www/gpgmw"
-          setenv.add-response-header = ( "Via" => "1.1 mailflux.net:11371 (lighttpd)" )
+          setenv.add-response-header = ( "Via" => "1.1 yourserver.tld:11371 (lighttpd)" )
           accesslog.filename = "/var/log/lighttpd/hkp-access.log"
           url.rewrite-once = ( "^/pks/(.*)" => "/index.php?/pks/$1" )
       }
