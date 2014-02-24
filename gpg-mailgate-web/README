@@ -51,17 +51,17 @@ Any issues should be reported to https://github.com/uakfdotb/gpg-mailgate
   
       server.reject-expect-100-with-417 = "disable"
 
-		  $SERVER["socket"] == ":11371" {
-		      server.document-root = "/var/www/gpgmw"
-		      setenv.add-response-header = ( "Via" => "1.1 mailflux.net:11371 (lighttpd)" )
-		      accesslog.filename = "/var/log/lighttpd/hkp-access.log"
-		      url.rewrite-once = ( "^/pks/(.*)" => "/index.php?/pks/$1" )
-		  }
+      $SERVER["socket"] == ":11371" {
+          server.document-root = "/var/www/gpgmw"
+          setenv.add-response-header = ( "Via" => "1.1 mailflux.net:11371 (lighttpd)" )
+          accesslog.filename = "/var/log/lighttpd/hkp-access.log"
+          url.rewrite-once = ( "^/pks/(.*)" => "/index.php?/pks/$1" )
+      }
 
   2) reload lighttpd: /etc/init.d/lighttpd restart
   3) in the index.php add the following line after the other required_once(...) lines:
   
-  		require_once("include/phphkp.php");
+      require_once("include/phphkp.php");
   
   4) check if it works with a GPG client of your choice pushing a public key to your server's
      domain or IP
