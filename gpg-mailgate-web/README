@@ -63,7 +63,9 @@ Any issues should be reported to https://github.com/uakfdotb/gpg-mailgate
   
       require_once("include/phphkp.php");
   
-  4) check if it works with a GPG client of your choice pushing a public key to your server's
+  4) change the constants in the include/phphkp.php file!
+  
+  5) check if it works with a GPG client of your choice pushing a public key to your server's
      domain or IP
      
      (HTTP request to http://yourserver.tld:11371/pks/add with the public key in a POST variable 'keytext')
