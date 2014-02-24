@@ -25,6 +25,8 @@ require_once("include/language.php");
 require_once("include/common.php");
 require_once("include/dbconnect.php");
 require_once("include/pgp.php");
+//require_once("include/phphkp.php");
+
 
 if(isset($_POST['email']) && isset($_POST['key'])) {
 	$result = requestPGP($_POST['email'], $_POST['key']);
