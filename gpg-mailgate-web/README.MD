@@ -48,7 +48,7 @@ Any issues should be reported to https://github.com/uakfdotb/gpg-mailgate
  'pks/add' in the URI)
 
   1) add the following lines to your lighttp.conf file and change the path to your gpg-mailgate-web directory
-  
+  ```
       server.reject-expect-100-with-417 = "disable"
 
       $SERVER["socket"] == ":11371" {
@@ -57,7 +57,7 @@ Any issues should be reported to https://github.com/uakfdotb/gpg-mailgate
           accesslog.filename = "/var/log/lighttpd/hkp-access.log"
           url.rewrite-once = ( "^/pks/(.*)" => "/index.php?/pks/$1" )
       }
-
+  ```
   2) reload lighttpd: /etc/init.d/lighttpd restart
   3) in the index.php add the following line after the other required_once(...) lines:
   
