@@ -2,6 +2,8 @@
 
 gpg-mailgate is a content filter for Postfix that automatically encrypts unencrypted incoming email using PGP for select recipients.
 
+* added HKP keyserver key submit function
+
 For installation instructions, please refer to the included INSTALL file.
 
 # Features
