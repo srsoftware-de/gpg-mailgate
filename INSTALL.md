@@ -1,11 +1,17 @@
  1. Ensure that GPG is installed and configured. Also make sure public keys for
     all of your potential recipients are available in the GPG home directory
     used for `keyhome` in step 2.
+
  2. Configure `/etc/gpg-mailgate.conf` based on the provided
     `gpg-mailgate.conf.sample`
+
+ 3. install some python dependencies `apt-get install python-m2crypto python-markdown`
+
  3. Place `gpg-mailgate.py` and `register-handler.py` in `/usr/local/bin/`
+ 
  4. Place the GnuPG directory in `/usr/local/lib/python2.7/dist-packages` (replace 2.7 with your
     Python version)
+ 
  5. Add the following to the end of `/etc/postfix/master.cf`
 
         gpg-mailgate    unix    -   n   n   -   -   pipe
@@ -31,7 +37,7 @@
 
  8. Restart postfix.
 
- 8. create a dedicated user to store the public keys with these example commands:
+ 9. create a dedicated user to store the public keys with these example commands:
 
         usermod -d /var/gpg nobody
         mkdir -p /var/gpg/.gnupg
