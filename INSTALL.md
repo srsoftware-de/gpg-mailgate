@@ -33,15 +33,14 @@
 
  8. create a dedicated user to store the public keys with these example commands:
 
-        `usermod -d /var/gpg nobody`
-        `mkdir -p /var/gpg/.gnupg`
-        `mkdir -p /var/smime/certs`
-        `mkdir -p /var/smime/templates`
-        `chown -R nobody /var/gpg`
-        `chown -R nobody /var/smime`
-        `chmod 700 /var/gpg/.gnupg`
-        `sudo -u nobody /usr/bin/gpg --import /some/public.key --homedir=/var/gpg/.gnupg`
-        
+        usermod -d /var/gpg nobody
+        mkdir -p /var/gpg/.gnupg
+        mkdir -p /var/smime/certs
+        mkdir -p /var/smime/templates
+        chown -R nobody /var/gpg
+        chown -R nobody /var/smime
+        chmod 700 /var/gpg/.gnupg
+        sudo -u nobody /usr/bin/gpg --import /some/public.key --homedir=/var/gpg/.gnupg
 
     - Replace `/some/public.key` with the location of a public key
     - `/some/public.key` can be deleted after importation
