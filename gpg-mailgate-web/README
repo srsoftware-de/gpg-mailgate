@@ -33,11 +33,10 @@ Note that all processing relating to the mail server is done via the
   4) Move config.sample.php to config.php and edit the configuration file.
   5) Copy cron.py to /usr/local/bin/gpgmw-cron.py and set up a cron job
     a) Create /etc/cron.d/gpgmw with the contents:
-    */3 * * * * gpgmap /usr/bin/python /usr/local/bin/gpgmw-cron.py > /dev/null
-     (replace gpgmap with the owner of the gpg-mailgate GPG home directory)
+    
+    */3 * * * * nobody /usr/bin/python /usr/local/bin/gpgmw-cron.py > /dev/null
+  
   6) Ensure that cron is working and test your new gpg-mailgate-web installation!
-
-Any issues should be reported to https://github.com/uakfdotb/gpg-mailgate
 
 ----------------------------------------
 
