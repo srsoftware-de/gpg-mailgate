@@ -13,10 +13,16 @@ keymap_only = no
 # (see INSTALL for details)
 keyhome = /var/gpg/.gnupg
 
+[smime]
+# the directory for the S/MIME certificate files
+cert_path = /var/smime/certs
+register_email = register@yourdomain.tld
+mail_templates = /var/smime/templates
+
 [logging]
 # For logging to syslog. 'file = syslog', otherwise use path to the file.
-file = /tmp/gpg-mailgate.log
-#verbose = yes
+file = syslog
+verbose = yes
 
 [relay]
 # the relay settings to use for Postfix
@@ -28,11 +34,11 @@ port = 10028
 [database]
 # uncomment the settings below if you want
 #  to read keys from a gpg-mailgate-web database
-#enabled = yes
-#name = gpgmw
-#host = localhost
-#username = gpgmw
-#password = 
+enabled = yes
+name = gpgmw
+host = localhost
+username = gpgmw
+password = Exp3c7GPG
 
 [keymap]
 # You can find these by running the following command:
@@ -42,4 +48,5 @@ port = 10028
 #	uid                          Joe User <user@example.com>
 #	sub   2048g/BBBBBBBBBBBBBBBB 2007-10-22
 # You want the AAAAAAAAAAAAAAAA not BBBBBBBBBBBBBBBB.
-#user@example.com = <gpg key id>
+#kflux@posteo.de = 9518A349
+#info@kiritanflux.de = 9518A349
