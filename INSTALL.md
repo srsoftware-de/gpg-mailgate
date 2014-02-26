@@ -33,16 +33,13 @@
 It is possible to create a dedicated user to store the PGP public keys with
 these example commands:
 
-    useradd -s /bin/false -d /var/gpg -M gpgmap
+    usermod -d /var/gpg nobody
     mkdir -p /var/gpg/.gnupg
-    chown -R gpgmap /var/gpg
+    chown -R nobody /var/gpg
     chmod 700 /var/gpg/.gnupg
-    sudo -u gpgmap /usr/bin/gpg --import /home/youruser/public.key --homedir=/var/gpg/.gnupg
+    sudo -u nobody /usr/bin/gpg --import /some/public.key --homedir=/var/gpg/.gnupg
 
-  - Replace `/home/youruser/public.key` with the location of your public key
-  - `/home/youruser/public.key` can be deleted after importation
-  - Confirm that it's working: `sudo -u gpgmap /usr/bin/gpg --list-keys --homedir=/var/gpg/.gnupg`
+  - Replace `/some/public.key` with the location of a public key
+  - `/some/public.key` can be deleted after importation
+  - Confirm that it's working: `sudo -u nobody /usr/bin/gpg --list-keys --homedir=/var/gpg/.gnupg`
   - Use `keyhome = /var/gpg/.gnupg` in `gpg-mailgate.conf`
-  - Change the `user=nobody` to `user=gpgmap` in the gpg-mailgate flags line in `/etc/postfix/master.cf`
-
-    `flags= user=gpgmap argv=/usr/local/bin/gpg-mailgate.py ${recipient}`
