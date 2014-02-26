@@ -25,11 +25,9 @@ This is a combined work of many developers and contributor:s
 * Colin Moller <colin@unixarmy.com> - [GitHub](https://github.com/LeftyBC/gpg-mailgate)
 * Taylor Hornby <havoc@defuse.ca> - [GitHub](https://github.com/defuse/gpg-mailgate)
 * Martin (uragit) <uragit@telemage.com> - [GitHub](https://github.com/uragit/gpg-mailgate)
-
 * Braden Thomas - [BitBucket](https://bitbucket.org/drspringfield/emailencrypt.net/)
 * Bruce Markey - [GitHub](https://github.com/TheEd1tor)
 * Remko Tronçon - [GitHub](https://github.com/remko/phkp/)
-
 * Kiritan Flux [GitHub](https://github.com/kflux)
 
 # To Do
