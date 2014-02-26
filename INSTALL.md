@@ -24,8 +24,10 @@
  6. Add the following to `/etc/postfix/main.cf`
 
         content_filter = gpg-mailgate
+        
+ 7. Add `register:	|/usr/local/bin/register_handler.py` to `/etc/aliases`
 
- 7. Restart postfix.
+ 8. Restart postfix.
 
  8. create a dedicated user to store the PGP public keys with these example commands:
 
