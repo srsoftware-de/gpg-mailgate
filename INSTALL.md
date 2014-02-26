@@ -7,12 +7,12 @@
 
  3. install some python dependencies `apt-get install python-m2crypto python-markdown`
 
- 3. Place `gpg-mailgate.py` and `register-handler.py` in `/usr/local/bin/`
+ 4. Place `gpg-mailgate.py` and `register-handler.py` in `/usr/local/bin/`
  
- 4. Place the GnuPG directory in `/usr/local/lib/python2.7/dist-packages` (replace 2.7 with your
+ 5. Place the GnuPG directory in `/usr/local/lib/python2.7/dist-packages` (replace 2.7 with your
     Python version)
  
- 5. Add the following to the end of `/etc/postfix/master.cf`
+ 6. Add the following to the end of `/etc/postfix/master.cf`
 
         gpg-mailgate    unix    -   n   n   -   -   pipe
             flags= user=nobody argv=/usr/local/bin/gpg-mailgate.py ${recipient}
@@ -27,17 +27,17 @@
             -o mynetworks=127.0.0.0/8
             -o smtpd_authorized_xforward_hosts=127.0.0.0/8
 
- 6. Add the following to `/etc/postfix/main.cf`
+ 7. Add the following to `/etc/postfix/main.cf`
 
         content_filter = gpg-mailgate
         
- 7. Add `register:	|/usr/local/bin/register_handler.py` to `/etc/aliases`
+ 8. Add `register:	|/usr/local/bin/register_handler.py` to `/etc/aliases`
 
- 8. Place `passthrough_emails.cf` in `/etc/postfix` and change the domain of the email address in the file
+ 9. Place `passthrough_emails.cf` in `/etc/postfix` and change the domain of the email address in the file
 
- 8. Restart postfix.
+ 10. Restart postfix.
 
- 9. create a dedicated user to store the public keys with these example commands:
+ 11. create a dedicated user to store the public keys with these example commands:
 
         usermod -d /var/gpg nobody
         mkdir -p /var/gpg/.gnupg
