@@ -3,8 +3,8 @@
     used for `keyhome` in step 2.
  2. Configure `/etc/gpg-mailgate.conf` based on the provided
     `gpg-mailgate.conf.sample`
- 3. Place `gpg-mailgate.py` in `/usr/local/bin/`
- 4. Place the GnuPG directory in `/usr/lib/python2.7/` (replace 2.7 with your
+ 3. Place `gpg-mailgate.py` and `register-handler.py` in `/usr/local/bin/`
+ 4. Place the GnuPG directory in `/usr/local/lib/python2.7/dist-packages` (replace 2.7 with your
     Python version)
  5. Add the following to the end of `/etc/postfix/master.cf`
 
@@ -27,11 +27,7 @@
 
  7. Restart postfix.
 
-
-## Note 1
-
-It is possible to create a dedicated user to store the PGP public keys with
-these example commands:
+ 8. create a dedicated user to store the PGP public keys with these example commands:
 
     usermod -d /var/gpg nobody
     mkdir -p /var/gpg/.gnupg
@@ -39,7 +35,6 @@ these example commands:
     chmod 700 /var/gpg/.gnupg
     sudo -u nobody /usr/bin/gpg --import /some/public.key --homedir=/var/gpg/.gnupg
 
-  - Replace `/some/public.key` with the location of a public key
-  - `/some/public.key` can be deleted after importation
-  - Confirm that it's working: `sudo -u nobody /usr/bin/gpg --list-keys --homedir=/var/gpg/.gnupg`
-  - Use `keyhome = /var/gpg/.gnupg` in `gpg-mailgate.conf`
+    - Replace `/some/public.key` with the location of a public key
+    - `/some/public.key` can be deleted after importation
+    - Confirm that it's working: `sudo -u nobody /usr/bin/gpg --list-keys --homedir=/var/gpg/.gnupg`
