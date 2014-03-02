@@ -33,11 +33,9 @@
         
  8. Add `register:	|/usr/local/bin/register_handler.py` to `/etc/aliases`
 
- 9. Place `passthrough_emails.cf` in `/etc/postfix` and change the domain of the email address in the file
+ 9. Restart postfix.
 
- 10. Restart postfix.
-
- 11. create a dedicated user to store the public keys with these example commands:
+ 10. create a dedicated user to store the public keys with these example commands:
 
         usermod -d /var/gpg nobody
         mkdir -p /var/gpg/.gnupg
