@@ -56,8 +56,6 @@ def log(msg):
 
 verbose=cfg.has_key('logging') and cfg['logging'].has_key('verbose') and cfg['logging']['verbose'] == 'yes'
 
-passthrough_emails = file("/etc/postfix/passthrough_emails.cf").read().split()
-
 CERT_PATH = cfg['smime']['cert_path']+"/"
 
 # Read e-mail from stdin
@@ -69,10 +67,14 @@ to_addrs = sys.argv[1:]
 def send_msg( message, recipients = None ):
 	if recipients == None:
 		recipients = to_addrs
-	log("Sending email to: <%s>" % '> <'.join( recipients ))
-	relay = (cfg['relay']['host'], int(cfg['relay']['port']))
-	smtp = smtplib.SMTP(relay[0], relay[1])
-	smtp.sendmail( from_addr, recipients, message )
+	recipients = filter(None, recipients)
+	if recipients:
+		log("Sending email to: <%s>" % '> <'.join( recipients ))
+		relay = (cfg['relay']['host'], int(cfg['relay']['port']))
+		smtp = smtplib.SMTP(relay[0], relay[1])
+		smtp.sendmail( from_addr, recipients, message )
+	else:
+		log("No recipient found");
 
 def encrypt_payload( payload, gpg_to_cmdline ):
 	raw_payload = payload.get_payload(decode=True)
@@ -81,24 +83,18 @@ def encrypt_payload( payload, gpg_to_cmdline ):
 	gpg = GnuPG.GPGEncryptor( cfg['gpg']['keyhome'], gpg_to_cmdline, payload.get_content_charset() )
 	gpg.update( raw_payload )
 	payload.set_payload( gpg.encrypt() )
-
 	isAttachment = payload.get_param( 'attachment', None, 'Content-Disposition' ) is not None
-
 	if isAttachment:
 		filename = payload.get_filename()
-
 		if filename:
 			pgpFilename = filename + ".pgp"
-
 			if payload.get('Content-Disposition') is not None:
 				payload.set_param( 'filename', pgpFilename, 'Content-Disposition' )
 			if payload.get('Content-Type') is not None:
 				if payload.get_param( 'name' ) is not None:
 					payload.set_param( 'name', pgpFilename )
-
 	if payload.get('Content-Transfer-Encoding') is not None:
 		payload.replace_header( 'Content-Transfer-Encoding', "7bit" )
-
 	return payload
 
 def encrypt_all_payloads( message, gpg_to_cmdline ):
@@ -127,6 +123,42 @@ def get_cert_for_email(to_addr):
 		log("Multi-email %s converted to %s"%(to_addr, fixed_up_email))
 		return get_cert_for_email(fixed_up_email)
 	return None
+	
+def to_smime_handler( raw_message, recipients = None ):
+	if recipients == None:
+		recipients = to_addrs
+	s = SMIME.SMIME()
+	sk = X509.X509_Stack()
+	normalized_recipient = []
+	for addr in recipients:
+		addr_addr = email.utils.parseaddr(addr)[1].lower()
+		cert_and_email = get_cert_for_email(addr_addr)
+		if cert_and_email: 
+			(to_cert, normal_email) = cert_and_email
+			log("Found cert "+to_cert+" for "+addr+": "+normal_email)
+			normalized_recipient.append((email.utils.parseaddr(addr)[0], normal_email))
+			x509 = X509.load_cert(to_cert, format=X509.FORMAT_PEM)
+			sk.push(x509)
+	if len(normalized_recipient):
+		s.set_x509_stack(sk)
+		s.set_cipher(SMIME.Cipher('aes_192_cbc'))
+		p7 = s.encrypt( BIO.MemoryBuffer(raw_message.as_string()) )
+		# Output p7 in mail-friendly format.
+		out = BIO.MemoryBuffer()
+		out.write('From: '+from_addr+'\n')
+		to_list = ",".join([email.utils.formataddr(x) for x in normalized_recipient])
+		out.write('To: '+to_list+'\n')
+		if raw_message['Subject']:
+			out.write('Subject: '+raw_message['Subject']+'\n')
+		s.write(out, p7)
+		log("Sending message from "+from_addr+" to "+str(recipients))
+		raw_msg = out.read()
+		send_msg(raw_msg, recipients)
+	else:
+		log("Unable to find valid S/MIME recipient")
+		send_msg(raw_message.as_string(), recipients)
+	return None
+
 
 keys = GnuPG.public_keys( cfg['gpg']['keyhome'] )
 gpg_to = list()
@@ -139,19 +171,19 @@ for to in to_addrs:
 		gpg_to.append( (to, cfg['keymap'][to]) )
 	else:
 		if verbose:
-			log("Recipient (%s) not in domain list." % to)
+			log("Recipient (%s) not in PGP domain list." % to)
 		ungpg_to.append(to)
 
 if gpg_to == list():
 	if cfg['default'].has_key('add_header') and cfg['default']['add_header'] == 'yes':
 		raw_message['X-GPG-Mailgate'] = 'Not encrypted, public key not found'
 	if verbose:
-		log("No encrypted recipients.")
-	send_msg( raw_message.as_string() )
+		log("No PGP encrypted recipients.")
+	to_smime_handler( raw_message )
 	exit()
 
 if ungpg_to != list():
-	send_msg( raw_message.as_string(), ungpg_to )
+	to_smime_handler( raw_message, ungpg_to )
 
 log("Encrypting email to: %s" % ' '.join( map(lambda x: x[0], gpg_to) ))
 
@@ -167,47 +199,4 @@ for rcpt in gpg_to:
 encrypted_payloads = encrypt_all_payloads( raw_message, gpg_to_cmdline )
 raw_message.set_payload( encrypted_payloads )
 
-did_passthru = False
-if len(to_addrs) == 1:
-	for pt_email in passthrough_emails:
-		if pt_email.lower() == email.utils.parseaddr(to_addrs[0])[1].lower():
-			did_passthru = True
-			send_msg(raw_message.as_string(), gpg_to_smtp)
-			break
-
-if not did_passthru:
-	s = SMIME.SMIME()
-	sk = X509.X509_Stack()
-
-	normalized_recipient = []
-
-	for addr in to_addrs:
-		addr_addr = email.utils.parseaddr(addr)[1].lower()
-		cert_and_email = get_cert_for_email(addr_addr)
-		if cert_and_email: 
-			(to_cert, normal_email) = cert_and_email
-			log("Found cert "+to_cert+" for "+addr+": "+normal_email)
-			normalized_recipient.append((email.utils.parseaddr(addr)[0], normal_email))
-			x509 = X509.load_cert(to_cert, format=X509.FORMAT_PEM)
-			sk.push(x509)
-			
-	if len(normalized_recipient):
-		s.set_x509_stack(sk)
-		s.set_cipher(SMIME.Cipher('aes_192_cbc'))
-		p7 = s.encrypt( BIO.MemoryBuffer(raw_message.as_string()) )
-		
-		# Output p7 in mail-friendly format.
-		out = BIO.MemoryBuffer()
-		out.write('From: '+from_addr+'\n')
-		to_list = ",".join([email.utils.formataddr(x) for x in normalized_recipient])
-		out.write('To: '+to_list+'\n')
-		if raw_message['Subject']:
-			out.write('Subject: '+raw_message['Subject']+'\n')
-		s.write(out, p7)
-
-		log("Sending message from "+from_addr+" to "+str(to_addrs))
-		raw_msg = out.read()
-		send_msg(raw_msg, gpg_to_smtp)
-	else:
-		log("Unable to find valid S/MIME recipient")
-		send_msg( raw_message.as_string(), gpg_to_smtp )
+to_smime_handler( raw_message, gpg_to_smtp )
