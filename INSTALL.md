@@ -5,7 +5,7 @@
  2. Configure `/etc/gpg-mailgate.conf` based on the provided
     `gpg-mailgate.conf.sample`
 
- 3. install some python dependencies `apt-get install python-m2crypto python-markdown`
+ 3. install some python dependencies `apt-get install python-m2crypto python-markdown python-requests`
 
  4. Place `gpg-mailgate.py` and `register-handler.py` in `/usr/local/bin/`
  
