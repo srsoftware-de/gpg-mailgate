@@ -48,5 +48,4 @@ password = password
 #	uid                          Joe User <user@example.com>
 #	sub   2048g/BBBBBBBBBBBBBBBB 2007-10-22
 # You want the AAAAAAAAAAAAAAAA not BBBBBBBBBBBBBBBB.
-#kflux@posteo.de = 9518A349
-#info@kiritanflux.de = 9518A349
+#you@domain.tld = 12345678
