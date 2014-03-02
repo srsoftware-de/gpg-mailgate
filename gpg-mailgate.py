@@ -150,6 +150,8 @@ def to_smime_handler( raw_message, recipients = None ):
 		out.write('To: '+to_list+'\n')
 		if raw_message['Subject']:
 			out.write('Subject: '+raw_message['Subject']+'\n')
+		if cfg['default'].has_key('add_header') and cfg['default']['add_header'] == 'yes':
+			out.write('X-GPG-Mailgate: Encrypted by GPG Mailgate\n')
 		s.write(out, p7)
 		log("Sending message from "+from_addr+" to "+str(recipients))
 		raw_msg = out.read()
