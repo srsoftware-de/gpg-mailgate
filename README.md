@@ -33,6 +33,6 @@ This is a combined work of many developers and contributor:s
 # To Do
 
 * clean up code
-* add optional email registration with attached public key to register@domain.tld
+* <del>add optional email registration with attached public key to register@domain.tld</del> done
 * outsource templates for emails and mailgate-web
 * rename from gpg-mailgate to openpgp-s-mime-mailgate or something.....
