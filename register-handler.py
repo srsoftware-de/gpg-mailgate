@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
 		sign_part = None
 		for msg_part in register_msg.walk():
-			if msg_part.get_content_type().lower() == "application/pkcs7-signature":
+			if msg_part.get_content_type().lower() == "application/pkcs7-signature" or msg_part.get_content_type().lower() == "application/x-pkcs7-signature":
 				sign_type = 'smime';
 				sign_part = msg_part
 				break
