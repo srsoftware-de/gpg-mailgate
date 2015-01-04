@@ -48,7 +48,9 @@ def confirm_key( content, email ):
 			break
 
 	os.mkdir(tmpkeyhome)
-	p = subprocess.Popen( ['/usr/bin/gpg', '--homedir', tmpkeyhome, '--import', '--batch'], stdin=subprocess.PIPE, stdout=subprocess.PIPE,stderr=subprocess.PIPE )
+	localized_env = os.environ.copy()
+	localized_env["LANG"] = "C"
+	p = subprocess.Popen( ['/usr/bin/gpg', '--homedir', tmpkeyhome, '--import', '--batch'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=localized_env )
 	result = p.communicate(input=content)[1]
 	confirmed = False
 
