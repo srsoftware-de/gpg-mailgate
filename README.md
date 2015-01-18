@@ -12,7 +12,7 @@ For installation instructions, please refer to the included INSTALL file.
 - gpg-mailgate-web extension is a web interface allowing any user to upload PGP keys so that emails sent to them from your mail server will be encrypted (see gpg-mailgate-web directory for details)
 - people can submit their public key like to any keyserver to gpg-mailgate with the gpg-mailgate-web extension
 - people can send an S/MIME signed email to register@yourdomain.tld to register their public key
-- people can send their public OpenPGP key as attachment to register@yourdomain.tld to register it
+- people can send their public OpenPGP key as attachment or inline to register@yourdomain.tld to register it
 
 This is forked from the original project at http://code.google.com/p/gpg-mailgate/
 
@@ -30,10 +30,12 @@ This is a combined work of many developers and contributor:s
 * Bruce Markey - [GitHub](https://github.com/TheEd1tor)
 * Remko Tronçon - [GitHub](https://github.com/remko/phkp/)
 * Kiritan Flux [GitHub](https://github.com/kflux)
+* Fabian Krone [GitHub] (https://github.com/fkrone/gpg-mailgate)
 
 # To Do
 
 * clean up code
-* <del>add optional email registration with attached public key to register@domain.tld</del> done
-* outsource templates for emails and mailgate-web
+* rewrite templates for register-handler
+* rewrite and improve installation instructions
 * rename from gpg-mailgate to openpgp-s-mime-mailgate or something.....
+* even more magical stuff

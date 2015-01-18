@@ -42,12 +42,19 @@ if __name__ == "__main__":
 		sign_part = None
 		for msg_part in register_msg.walk():
 			if msg_part.get_content_type().lower() == "application/pkcs7-signature" or msg_part.get_content_type().lower() == "application/x-pkcs7-signature":
-				sign_type = 'smime';
+				sign_type = 'smime'
 				sign_part = msg_part
 				break
 			elif msg_part.get_content_type().lower() == "application/pgp-keys":
-				sign_type = 'pgp';
-				sign_part = msg_part
+				sign_type = 'pgp'
+				sign_part = msg_part.get_payload()
+				break
+			elif "-----BEGIN PGP PUBLIC KEY BLOCK-----" in msg_part.get_payload() and "-----END PGP PUBLIC KEY BLOCK-----" in msg_part.get_payload():
+				msg_content = msg_part.get_payload()
+				start = msg_content.find("-----BEGIN PGP PUBLIC KEY BLOCK-----")
+				end = msg_content.find("-----END PGP PUBLIC KEY BLOCK-----")
+				sign_type = 'pgp'
+				sign_part = msg_content[start:end + 34]
 				break
 
 		if sign_part == None:
@@ -89,7 +96,7 @@ if __name__ == "__main__":
 			
 		elif sign_type == 'pgp':
 			 # send POST to localost on port 11371 which points to our HTTP registration page
-			sig = sign_part.get_payload()
+			sig = sign_part
 			payload = {'email': from_addr, 'key': sig}
 			r = requests.post("http://127.0.0.1:11371", data=payload)
 
