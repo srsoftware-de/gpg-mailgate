@@ -64,12 +64,12 @@ if __name__ == "__main__":
 
 			send_msg(msg, cfg['smime']['register_email'], [from_addr])
 			sys.exit(0)
-
-		raw_sig = sign_part.get_payload().replace("\n","")
-		# re-wrap signature so that it fits base64 standards
-		cooked_sig = '\n'.join(raw_sig[pos:pos+76] for pos in xrange(0, len(raw_sig), 76))
 		
 		if sign_type == 'smime':
+			raw_sig = sign_part.get_payload().replace("\n","")
+			# re-wrap signature so that it fits base64 standards
+			cooked_sig = '\n'.join(raw_sig[pos:pos+76] for pos in xrange(0, len(raw_sig), 76))
+			
 			# now, wrap the signature in a PKCS7 block
 			sig = """
 -----BEGIN PKCS7-----
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 			
 		elif sign_type == 'pgp':
 			 # send POST to localost on port 11371 which points to our HTTP registration page
-			sig = cooked_sig
+			sig = sign_part.get_payload()
 			payload = {'email': from_addr, 'key': sig}
 			r = requests.post("http://127.0.0.1:11371", data=payload)
 
