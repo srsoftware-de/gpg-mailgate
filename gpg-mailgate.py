@@ -167,6 +167,7 @@ gpg_to = list()
 ungpg_to = list()
 
 for to in to_addrs:
+	to = to.lower()
 	if to in keys and not ( cfg['default'].has_key('keymap_only') and cfg['default']['keymap_only'] == 'yes'  ):
 		gpg_to.append( (to, to) )
 	elif cfg.has_key('keymap') and cfg['keymap'].has_key(to):

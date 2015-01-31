@@ -33,7 +33,7 @@ def public_keys( keyhome ):
 		if line[0:3] == 'uid' or line[0:3] == 'pub':
 			if ('<' not in line or '>' not in line):
 				continue
-			key = line.split('<')[1].split('>')[0]
+			key = line.split('<')[1].split('>')[0].lower()
 			if keys.count(key) == 0:
 				keys.append(key)
 	return keys
