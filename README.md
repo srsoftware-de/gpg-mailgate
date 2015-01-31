@@ -1,5 +1,7 @@
 # gpg-mailgate
 
+**Please note: This fork is currently WIP. It is not recommended for use at the moment.**
+
 gpg-mailgate is a content filter for Postfix that automatically encrypts unencrypted incoming email using PGP or S/MIME for select recipients.
 
 For installation instructions, please refer to the included INSTALL file.
@@ -18,7 +20,7 @@ This is forked from the original project at http://code.google.com/p/gpg-mailgat
 
 # Authors
 
-This is a combined work of many developers and contributor:s
+This is a combined work of many developers and contributors:
 
 * mcmaster <mcmaster@aphrodite.hurricanelabs.rsoc>
 * Igor Rzegocki <ajgon@irgon.com> - [GitHub](https://github.com/ajgon/gpg-mailgate)
@@ -37,5 +39,6 @@ This is a combined work of many developers and contributor:s
 * clean up code
 * rewrite templates for register-handler
 * rewrite and improve installation instructions
+* rewrite readme of gpg-mailgate-web in markdown
 * rename from gpg-mailgate to openpgp-s-mime-mailgate or something.....
 * even more magical stuff

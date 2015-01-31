@@ -45,10 +45,11 @@ if __name__ == "__main__":
 				sign_type = 'smime'
 				sign_part = msg_part
 				break
-			elif msg_part.get_content_type().lower() == "application/pgp-keys":
-				sign_type = 'pgp'
-				sign_part = msg_part.get_payload()
-				break
+			# This may cause that a non ASCII-armored key will be seen as valid. Other solution is not that efficient though
+			#elif msg_part.get_content_type().lower() == "application/pgp-keys":
+			#	sign_type = 'pgp'
+			#	sign_part = msg_part.get_payload()
+			#	break
 			elif "-----BEGIN PGP PUBLIC KEY BLOCK-----" in msg_part.get_payload() and "-----END PGP PUBLIC KEY BLOCK-----" in msg_part.get_payload():
 				msg_content = msg_part.get_payload()
 				start = msg_content.find("-----BEGIN PGP PUBLIC KEY BLOCK-----")
@@ -60,16 +61,16 @@ if __name__ == "__main__":
 		if sign_part == None:
 			log("Unable to find PKCS7 signature or public PGP key in registration email")
 
-			failure_msg = file( cfg['smime']['mail_templates'] + "/registrationError.md").read()
+			failure_msg = file( cfg['mailregister']['mail_templates'] + "/registrationError.md").read()
 			msg = MIMEMultipart("alternative")
-			msg["From"] = cfg['smime']['register_email']
+			msg["From"] = cfg['mailregister']['register_email']
 			msg["To"] = from_addr
 			msg["Subject"] = "S/MIME / OpenPGP registration failed"
 
 			msg.attach(MIMEText(failure_msg, 'plain'))
 			msg.attach(MIMEText(markdown.markdown(failure_msg), 'html'))
 
-			send_msg(msg, cfg['smime']['register_email'], [from_addr])
+			send_msg(msg, cfg['mailregister']['register_email'], [from_addr])
 			sys.exit(0)
 		
 		if sign_type == 'smime':
@@ -93,27 +94,30 @@ if __name__ == "__main__":
 			signing_cert = signers[0]
 
 			signing_cert.save(os.path.join(CERT_PATH, from_addr))
+					
+			# format in user-specific data
+			# sending success mail only for S/MIME as GPGMW handles this on its own
+			success_msg = file(cfg['mailregister']['mail_templates']+"/registrationSuccess.md").read()
+			success_msg = success_msg.replace("[:FROMADDRESS:]",from_addr)
 			
+			msg = MIMEMultipart("alternative")
+			msg["From"] = cfg['mailregister']['register_email']
+			msg["To"] = from_addr
+			msg["Subject"] = "S/MIME certificate registration succeeded"
+
+			msg.attach(MIMEText(success_msg, 'plain'))
+			msg.attach(MIMEText(markdown.markdown(success_msg), 'html'))
+			
+			send_msg(msg, cfg['mailregister']['register_email'], [from_addr])
+			
+			log("S/MIME Registration succeeded")
 		elif sign_type == 'pgp':
-			 # send POST to localost on port 11371 which points to our HTTP registration page
+			# send POST to gpg-mailgate webpanel
 			sig = sign_part
 			payload = {'email': from_addr, 'key': sig}
-			r = requests.post("http://127.0.0.1:11371", data=payload)
-
-		# format in user-specific data
-		success_msg = file(cfg['smime']['mail_templates']+"/registrationSuccess.md").read()
-		success_msg = success_msg.replace("[:FROMADDRESS:]",from_addr)
-
-		msg = MIMEMultipart("alternative")
-		msg["From"] = cfg['smime']['register_email']
-		msg["To"] = from_addr
-		msg["Subject"] = "S/MIME / OpenPGP key registration succeeded"
-
-		msg.attach(MIMEText(success_msg, 'plain'))
-		msg.attach(MIMEText(markdown.markdown(success_msg), 'html'))
-
-		log("Registration succeeded")
-		send_msg(msg, cfg['smime']['register_email'], [from_addr])
+			r = requests.post(cfg['mailregister']['webpanel_url'], data=payload)
+			
+			log("PGP registration is handed over to GPGMW")
 #	except:
 #		log("Registration exception")
 #		sys.exit(0)

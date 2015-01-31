@@ -16,8 +16,19 @@ keyhome = /var/gpg/.gnupg
 [smime]
 # the directory for the S/MIME certificate files
 cert_path = /var/smime/certs
+
+[mailregister]
+# settings for the register-handler
 register_email = register@yourdomain.tld
-mail_templates = /var/smime/templates
+mail_templates = /var/gpgmailgate/register_templates
+# URL to webpanel. The server should be able to reach it
+webpanel_url = http://yourdomain.tld
+
+[cron]
+# settings for the gpgmw cron job
+send_email = yes
+notification_email = gpg-mailgate@yourdomain.tld
+mail_templates = /var/gpgmailgate/cron_templates
 
 [logging]
 # For logging to syslog. 'file = syslog', otherwise use path to the file.

@@ -23,7 +23,9 @@ from ConfigParser import RawConfigParser
 import GnuPG
 import MySQLdb
 import smtplib
+import markdown
 from email.MIMEText import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 def appendLog(msg):
 	if cfg.has_key('logging') and cfg['logging'].has_key('file'):
@@ -31,15 +33,20 @@ def appendLog(msg):
 		log.write(msg + "\n")
 		log.close()
 
-def send_msg( mailsubject, mailbody, recipients = None ):
-	msg = MIMEText(mailbody)
-	msg["From"] = cfg['smime']['register_email']
+def send_msg( mailsubject, messagefile, recipients = None ):
+	mailbody = file( cfg['cron']['mail_templates'] + "/" + messagefile).read()
+	msg = MIMEMultipart("alternative")
+
+	msg["From"] = cfg['cron']['notification_email']
 	msg["To"] = recipients
 	msg["Subject"] = mailsubject
 	
+	msg.attach(MIMEText(mailbody, 'plain'))
+	msg.attach(MIMEText(markdown.markdown(mailbody), 'html'))
+	
 	relay = ("127.0.0.1", 10028)
 	smtp = smtplib.SMTP(relay[0], relay[1])
-	smtp.sendmail( cfg['smime']['register_email'], recipients, msg.as_string() )
+	smtp.sendmail( cfg['cron']['notification_email'], recipients, msg.as_string() )
 
 # Read configuration from /etc/gpg-mailgate.conf
 _cfg = RawConfigParser()
@@ -69,15 +76,18 @@ if cfg.has_key('database') and cfg['database'].has_key('enabled') and cfg['datab
 				GnuPG.add_key(cfg['gpg']['keyhome'], row[0]) # import the key to gpg
 				cursor.execute("UPDATE gpgmw_keys SET status = 1 WHERE id = %s", (row[1],)) # mark key as accepted
 				appendLog('Imported key from <' + row[2] + '>')
-				send_msg( "PGP key registration successful", "Your PGP key has been imported successfully. Don't be worried if this mail is not encrypted. The following mails will be encrypted.", row[2] )
+				if cfg['cron'].has_key('send_email') and cfg['cron']['send_email'] == 'yes':
+					send_msg( "PGP key registration successful", "registrationSuccess.md", row[2] )
 			else:
 				cursor.execute("DELETE FROM gpgmw_keys WHERE id = %s", (row[1],)) # delete key
 				appendLog('Import confirmation failed for <' + row[2] + '>')
-				send_msg( "PGP key registration failed", "Your PGP key could not be validated. Please try again with a valid key.", row[2] )
+				if cfg['cron'].has_key('send_email') and cfg['cron']['send_email'] == 'yes':
+					send_msg( "PGP key registration failed", "registrationError.md", row[2] )
 		else:
 			# delete key so we don't continue processing it
 			cursor.execute("DELETE FROM gpgmw_keys WHERE id = %s", (row[1],))
-			send_msg( "PGP key deleted", "Your PGP key has been deleted from our gateway. From now on you will receive mails from us unencrypted.", row[2])
+			if cfg['cron'].has_key('send_email') and cfg['cron']['send_email'] == 'yes':
+				send_msg( "PGP key deleted", "keyDeleted.md", row[2])
 
 		connection.commit()
 
