@@ -208,4 +208,4 @@ for rcpt in gpg_to:
 encrypted_payloads = encrypt_all_payloads( raw_message, gpg_to_cmdline )
 raw_message.set_payload( encrypted_payloads )
 
-to_smime_handler( raw_message, gpg_to_smtp )
+send_msg( raw_message.as_string(), gpg_to_smtp )
