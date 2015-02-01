@@ -130,35 +130,41 @@ def to_smime_handler( raw_message, recipients = None ):
 	s = SMIME.SMIME()
 	sk = X509.X509_Stack()
 	normalized_recipient = []
+	un_smime = recipients
 	for addr in recipients:
 		addr_addr = email.utils.parseaddr(addr)[1].lower()
 		cert_and_email = get_cert_for_email(addr_addr)
 		if cert_and_email: 
 			(to_cert, normal_email) = cert_and_email
+			un_smime.remove(addr_addr)
 			log("Found cert "+to_cert+" for "+addr+": "+normal_email)
 			normalized_recipient.append((email.utils.parseaddr(addr)[0], normal_email))
 			x509 = X509.load_cert(to_cert, format=X509.FORMAT_PEM)
 			sk.push(x509)
 	if len(normalized_recipient):
+		to_smime = [email.utils.formataddr(x) for x in normalized_recipient]
 		s.set_x509_stack(sk)
 		s.set_cipher(SMIME.Cipher('aes_192_cbc'))
 		p7 = s.encrypt( BIO.MemoryBuffer(raw_message.as_string()) )
 		# Output p7 in mail-friendly format.
 		out = BIO.MemoryBuffer()
 		out.write('From: '+from_addr+'\n')
-		to_list = ",".join([email.utils.formataddr(x) for x in normalized_recipient])
-		out.write('To: '+to_list+'\n')
+		out.write('To: ' + raw_message['To'] + '\n')
+		if raw_message['Cc']:
+			out.write('Cc: ' + raw_message['Cc'] + '\n')
+		if raw_message['Bcc']:
+			out.write('Bcc: ' + raw_message['Bcc'] + '\n')
 		if raw_message['Subject']:
 			out.write('Subject: '+raw_message['Subject']+'\n')
 		if cfg['default'].has_key('add_header') and cfg['default']['add_header'] == 'yes':
 			out.write('X-GPG-Mailgate: Encrypted by GPG Mailgate\n')
 		s.write(out, p7)
-		log("Sending message from "+from_addr+" to "+str(recipients))
+		log("Sending message from "+from_addr+" to "+str(to_smime))
 		raw_msg = out.read()
-		send_msg(raw_msg, recipients)
-	else:
-		log("Unable to find valid S/MIME recipient")
-		send_msg(raw_message.as_string(), recipients)
+		send_msg(raw_msg, to_smime)
+	if len(un_smime):
+		log("Unable to find valid S/MIME certificates for " + str(un_smime))
+		send_msg(raw_message.as_string(), un_smime)
 	return None
 
 
