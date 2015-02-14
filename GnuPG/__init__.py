@@ -33,7 +33,7 @@ def public_keys( keyhome ):
 		if line[0:3] == 'uid' or line[0:3] == 'pub':
 			if ('<' not in line or '>' not in line):
 				continue
-			email = line.split('<')[1].split('>')[0]
+			email = line.split('<')[1].split('>')[0].lower()
 			fingerprint = line.split(':')[4]
 			keys[fingerprint] = email
 	return keys
