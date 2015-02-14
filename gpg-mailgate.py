@@ -108,6 +108,7 @@ def encrypt_all_payloads( message, gpg_to_cmdline ):
 			encrypted_payloads.append( encrypt_payload( payload, gpg_to_cmdline ) )
 	return encrypted_payloads
 
+# This method is not referenced
 def get_msg( message ):
 	if not message.is_multipart():
 		return message.get_payload()
@@ -130,19 +131,19 @@ def to_smime_handler( raw_message, recipients = None ):
 	s = SMIME.SMIME()
 	sk = X509.X509_Stack()
 	normalized_recipient = []
-	un_smime = recipients
+	unsmime_to = recipients
 	for addr in recipients:
 		addr_addr = email.utils.parseaddr(addr)[1].lower()
 		cert_and_email = get_cert_for_email(addr_addr)
 		if cert_and_email: 
 			(to_cert, normal_email) = cert_and_email
-			un_smime.remove(addr_addr)
+			unsmime_to.remove(addr_addr)
 			log("Found cert "+to_cert+" for "+addr+": "+normal_email)
 			normalized_recipient.append((email.utils.parseaddr(addr)[0], normal_email))
 			x509 = X509.load_cert(to_cert, format=X509.FORMAT_PEM)
 			sk.push(x509)
 	if len(normalized_recipient):
-		to_smime = [email.utils.formataddr(x) for x in normalized_recipient]
+		smime_to = [email.utils.formataddr(x) for x in normalized_recipient]
 		s.set_x509_stack(sk)
 		s.set_cipher(SMIME.Cipher('aes_192_cbc'))
 		p7 = s.encrypt( BIO.MemoryBuffer(raw_message.as_string()) )
@@ -159,12 +160,12 @@ def to_smime_handler( raw_message, recipients = None ):
 		if cfg['default'].has_key('add_header') and cfg['default']['add_header'] == 'yes':
 			out.write('X-GPG-Mailgate: Encrypted by GPG Mailgate\n')
 		s.write(out, p7)
-		log("Sending message from "+from_addr+" to "+str(to_smime))
+		log("Sending message from "+from_addr+" to "+str(smime_to))
 		raw_msg = out.read()
-		send_msg(raw_msg, to_smime)
-	if len(un_smime):
-		log("Unable to find valid S/MIME certificates for " + str(un_smime))
-		send_msg(raw_message.as_string(), un_smime)
+		send_msg(raw_msg, smime_to)
+	if len(unsmime_to):
+		log("Unable to find valid S/MIME certificates for " + str(unsmime_to))
+		send_msg(raw_message.as_string(), unsmime_to)
 	return None
 
 
