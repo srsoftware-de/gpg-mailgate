@@ -37,6 +37,7 @@ This is a combined work of many developers and contributors:
 # To Do
 
 * clean up code
+* IMPORTANT: S/MIME ignores case sensitivity settings
 * rewrite and improve installation instructions
 * rewrite readme of gpg-mailgate-web in markdown
 * rename from gpg-mailgate to openpgp-s-mime-mailgate or something.....

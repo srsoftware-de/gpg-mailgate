@@ -211,10 +211,24 @@ def to_smime_handler( raw_message, recipients = None ):
 
 
 keys = GnuPG.public_keys( cfg['gpg']['keyhome'] )
+if cfg['default'].has_key('mail_case_sensitive') and cfg['default']['mail_case_sensitive'] == 'yes':
+	for fingerprint in keys:
+		splitted_address = keys[fingerprint].split('@')
+		keys[fingerprint] = splitted_address[0] + '@' + splitted_address[1].lower()
+else:
+	for fingerprint in keys:	
+		keys[fingerprint] = keys[fingerprint].lower()
+
 gpg_to = list()
 ungpg_to = list()
 
 for to in to_addrs:
+	if cfg['default'].has_key('mail_case_sensitive') and cfg['default']['mail_case_sensitive'] == 'yes':
+		splitted_to = to.split('@')
+		to = splitted_to[0] + '@' + splitted_to[1].lower()
+	else:	
+		to = to.lower()
+
 	if to in keys.values() and not ( cfg['default'].has_key('keymap_only') and cfg['default']['keymap_only'] == 'yes'  ):
 		gpg_to.append( (to, to) )
 	elif cfg.has_key('keymap') and cfg['keymap'].has_key(to):

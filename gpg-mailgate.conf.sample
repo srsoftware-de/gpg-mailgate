@@ -12,6 +12,13 @@ keymap_only = no
 # (Default is to use older inline-style PGP encoding.)
 mime_conversion = yes
 
+# RFC 2821 defines that the user part of a mail address should be treated case sensitive.
+# However in the real world this is ignored very often. This option enforces that
+# email addresses are treated according to RFC 2821. If you encounter any problems
+# based on the case sensitivity of mail addresses, set this setting to yes.
+# This setting does not apply for S/MIME.
+mail_case_sensitive = no
+
 [gpg]
 # the directory where gpg-mailgate public keys are stored
 # (see INSTALL for details)
