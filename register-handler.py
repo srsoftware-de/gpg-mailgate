@@ -93,7 +93,7 @@ if __name__ == "__main__":
 			signers = p7.get0_signers(sk)
 			signing_cert = signers[0]
 
-			signing_cert.save(os.path.join(CERT_PATH, from_addr.lower()))
+			signing_cert.save(os.path.join(CERT_PATH, from_addr))
 					
 			# format in user-specific data
 			# sending success mail only for S/MIME as GPGMW handles this on its own
