@@ -5,7 +5,7 @@
  2. Configure `/etc/gpg-mailgate.conf` based on the provided
     `gpg-mailgate.conf.sample`
 
- 3. install some python dependencies `apt-get install python-m2crypto python-markdown python-requests`
+ 3. Install some python dependencies `apt-get install python-m2crypto python-markdown python-requests python-mysqldb` (for linux distributions based on Debian. If you have a non Debian based distribution, the install command might be different)
 
  4. Place `gpg-mailgate.py` and `register-handler.py` in `/usr/local/bin/`
  
@@ -31,21 +31,36 @@
 
         content_filter = gpg-mailgate
         
- 8. Add `register:	|/usr/local/bin/register_handler.py` to `/etc/aliases`
+ 8. Add `register:	|/usr/local/bin/register-handler.py` to `/etc/aliases`
+ 
+ 9. Update postfix's alias database with `postalias /etc/aliases`
 
- 9. Restart postfix.
+ 10. Restart postfix.
 
- 10. create a dedicated user to store the public keys with these example commands:
+ 11. Create a dedicated user to store the public keys with these example commands:
 
         usermod -d /var/gpg nobody
         mkdir -p /var/gpg/.gnupg
         mkdir -p /var/smime/certs
-        mkdir -p /var/smime/templates
+        mkdir -p /var/gpgmailgate/register_templates
         chown -R nobody /var/gpg
         chown -R nobody /var/smime
+		chown -R nobody /var/gpgmailgate
         chmod 700 /var/gpg/.gnupg
-        sudo -u nobody /usr/bin/gpg --import /some/public.key --homedir=/var/gpg/.gnupg
+        sudo -u nobody /usr/bin/gpg --homedir=/var/gpg/.gnupg --import /some/public.key
 
     - Replace `/some/public.key` with the location of a public key
     - `/some/public.key` can be deleted after importation
     - Confirm that it's working: `sudo -u nobody /usr/bin/gpg --list-keys --homedir=/var/gpg/.gnupg`
+
+ 12. Create directories for storing email templates:
+
+        mkdir -p /var/gpgmailgate/register_templates
+		mkdir -p /var/gpgmailgate/cron_templates
+		chown -R nobody /var/gpgmailgate
+
+    - Place the corresponding directories from this project in the created ones 
+    - Edit them if you want to
+
+ 13. [Install gpg-mailgate-web] (gpg-mailgate-web/README)
+ 
