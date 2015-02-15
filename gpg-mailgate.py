@@ -156,8 +156,14 @@ def get_msg( message ):
 	return '\n\n'.join( [str(m) for m in message.get_payload()] )
 	
 def get_cert_for_email(to_addr):
-	simple_path = os.path.join(CERT_PATH, to_addr)
-	if os.path.exists(simple_path): return (simple_path, to_addr)
+	files_in_directory = os.listdir(CERT_PATH)
+	for filename in files_in_directory:
+		file_path = os.path.join(CERT_PATH, filename)
+		if not os.path.isfile(file_path): continue
+		if cfg['default'].has_key('mail_case_sensitive') and cfg['default']['mail_case_sensitive'] == 'yes':
+			if filename == to_addr: return (file_path, to_addr)
+		else:
+			if filename.lower() == to_addr: return (file_path, to_addr)
 	# support foo+ignore@bar.com -> foo@bar.com
 	multi_email = re.match('^([^\+]+)\+([^@]+)@(.*)$', to_addr)
 	if multi_email:
@@ -174,11 +180,18 @@ def to_smime_handler( raw_message, recipients = None ):
 	normalized_recipient = []
 	unsmime_to = recipients
 	for addr in recipients:
-		addr_addr = email.utils.parseaddr(addr)[1].lower()
+		addr_addr = email.utils.parseaddr(addr)[1]
+		
+		if cfg['default'].has_key('mail_case_sensitive') and cfg['default']['mail_case_sensitive'] == 'yes':
+			splitted_addr_addr = addr_addr.split('@')
+			addr_addr = splitted_addr_addr[0] + '@' + splitted_addr_addr[1].lower()
+		else:
+			addr_addr = addr_addr.lower()
+		
 		cert_and_email = get_cert_for_email(addr_addr)
-		if cert_and_email: 
+		if cert_and_email:
 			(to_cert, normal_email) = cert_and_email
-			unsmime_to.remove(addr_addr)
+			unsmime_to.remove(addr)
 			log("Found cert "+to_cert+" for "+addr+": "+normal_email)
 			normalized_recipient.append((email.utils.parseaddr(addr)[0], normal_email))
 			x509 = X509.load_cert(to_cert, format=X509.FORMAT_PEM)
