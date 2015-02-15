@@ -178,7 +178,7 @@ def to_smime_handler( raw_message, recipients = None ):
 	s = SMIME.SMIME()
 	sk = X509.X509_Stack()
 	normalized_recipient = []
-	unsmime_to = recipients
+	unsmime_to = list(recipients)
 	for addr in recipients:
 		addr_addr = email.utils.parseaddr(addr)[1]
 		
