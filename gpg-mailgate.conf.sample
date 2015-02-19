@@ -71,3 +71,10 @@ password = password
 #	sub   2048g/BBBBBBBBBBBBBBBB 2007-10-22
 # You want the AAAAAAAAAAAAAAAA not BBBBBBBBBBBBBBBB.
 #you@domain.tld = 12345678
+
+[pgp_style]
+# Here a PGP style (inline or PGP/MIME) could be defined for recipients.
+# This overwrites the setting mime_conversion for the defined recipients.
+# Valid entries are inline and mime
+# If an entry is not valid, the setting mime_conversion is used as fallback.
+#you@domian.tld = mime

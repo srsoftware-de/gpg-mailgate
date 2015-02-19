@@ -32,6 +32,7 @@ import syslog
 import traceback
 import email.utils
 import os
+import copy
 
 # imports for S/MIME
 from M2Crypto import BIO, Rand, SMIME, X509
@@ -55,7 +56,7 @@ def log(msg):
 			logfile.write(msg + "\n")
 			logfile.close()
 
-verbose=cfg.has_key('logging') and cfg['logging'].has_key('verbose') and cfg['logging']['verbose'] == 'yes'
+verbose = cfg.has_key('logging') and cfg['logging'].has_key('verbose') and cfg['logging']['verbose'] == 'yes'
 
 CERT_PATH = cfg['smime']['cert_path']+"/"
 
@@ -101,52 +102,59 @@ def encrypt_payload( payload, gpg_to_cmdline ):
 		payload.replace_header( 'Content-Transfer-Encoding', "7bit" )
 	return payload
 
-def encrypt_all_payloads( message, gpg_to_cmdline ):
+def encrypt_all_payloads_inline( message, gpg_to_cmdline ):
 	encrypted_payloads = list()
 	if type( message.get_payload() ) == str:
-		if cfg.has_key('default') and cfg['default'].has_key('mime_conversion') and cfg['default']['mime_conversion'] == 'yes':
-			# Convert a plain text email into PGP/MIME attachment style.  Modeled after enigmail.
-			submsg1=email.message.Message()
-			submsg1.set_payload("Version: 1\n")
-			submsg1.set_type("application/pgp-encrypted")
-			submsg1.set_param('PGP/MIME version identification', "", 'Content-Description' )
-			
-			submsg2=email.message.Message()
-			submsg2.set_type("application/octet-stream")
-			submsg2.set_param('name', "encrypted.asc")
-			submsg2.set_param('OpenPGP encrypted message', "", 'Content-Description' )
-			submsg2.set_param('inline', "",                'Content-Disposition' )
-			submsg2.set_param('filename', "encrypted.asc", 'Content-Disposition' )
-			
-			# WTF!  It seems to swallow the first line.  Not sure why.  Perhaps
-			# it's skipping an imaginary blank line someplace. (ie skipping a header)
-			# Workaround it here by prepending a blank line.
-			submsg2.set_payload("\n"+message.get_payload())
-
-			message.preamble="This is an OpenPGP/MIME encrypted message (RFC 2440 and 3156)"
-			
-			# Use this just to generate a MIME boundary string.
-			junk_msg = MIMEMultipart()
-			junk_str=junk_msg.as_string()  # WTF!  Without this, get_boundary() will return 'None'!
-			boundary=junk_msg.get_boundary()
-
-		    # This also modifies the boundary in the body of the message, ie it gets parsed.
-			if message.has_key('Content-Type'):
-				message.replace_header('Content-Type', "multipart/encrypted; protocol=\"application/pgp-encrypted\";\nboundary=\"%s\"\n" % boundary)
-			else:
-				message['Content-Type']="multipart/encrypted; protocol=\"application/pgp-encrypted\";\nboundary=\"%s\"\n" % boundary
-
-			return [ submsg1, encrypt_payload( submsg2, gpg_to_cmdline) ]
-		else:
-			# Do a simple in-line PGP conversion of a plain text email.
-			return encrypt_payload( message, gpg_to_cmdline ).get_payload()
-
+		return encrypt_payload( message, gpg_to_cmdline ).get_payload()
 
 	for payload in message.get_payload():
 		if( type( payload.get_payload() ) == list ):
 			encrypted_payloads.extend( encrypt_all_payloads( payload, gpg_to_cmdline ) )
 		else:
 			encrypted_payloads.append( encrypt_payload( payload, gpg_to_cmdline ) )
+	return encrypted_payloads
+
+def encrypt_all_payloads_attachment_style( message, gpg_to_cmdline ):
+	encrypted_payloads = list()
+	if type( message.get_payload() ) == str:
+		# Convert a plain text email into PGP/MIME attachment style.  Modeled after enigmail.
+		submsg1 = email.message.Message()
+		submsg1.set_payload("Version: 1\n")
+		submsg1.set_type("application/pgp-encrypted")
+		submsg1.set_param('PGP/MIME version identification', "", 'Content-Description' )
+		
+		submsg2 = email.message.Message()
+		submsg2.set_type("application/octet-stream")
+		submsg2.set_param('name', "encrypted.asc")
+		submsg2.set_param('OpenPGP encrypted message', "", 'Content-Description' )
+		submsg2.set_param('inline', "",                'Content-Disposition' )
+		submsg2.set_param('filename', "encrypted.asc", 'Content-Disposition' )
+		
+		# WTF!  It seems to swallow the first line.  Not sure why.  Perhaps
+		# it's skipping an imaginary blank line someplace. (ie skipping a header)
+		# Workaround it here by prepending a blank line.
+		submsg2.set_payload("\n" + message.get_payload())
+
+		message.preamble = "This is an OpenPGP/MIME encrypted message (RFC 2440 and 3156)"
+		
+		# Use this just to generate a MIME boundary string.
+		junk_msg = MIMEMultipart()
+		junk_str = junk_msg.as_string()  # WTF!  Without this, get_boundary() will return 'None'!
+		boundary = junk_msg.get_boundary()
+
+	    # This also modifies the boundary in the body of the message, ie it gets parsed.
+		if message.has_key('Content-Type'):
+			message.replace_header('Content-Type', "multipart/encrypted; protocol=\"application/pgp-encrypted\";\nboundary=\"%s\"\n" % boundary)
+		else:
+			message['Content-Type'] = "multipart/encrypted; protocol=\"application/pgp-encrypted\";\nboundary=\"%s\"\n" % boundary
+
+		return [ submsg1, encrypt_payload(submsg2, gpg_to_cmdline) ]
+
+	for payload in message.get_payload():
+		if( type( payload.get_payload() ) == list ):
+			encrypted_payloads.extend( encrypt_all_payloads(payload, gpg_to_cmdline) )
+		else:
+			encrypted_payloads.append( encrypt_payload(payload, gpg_to_cmdline) )
 	return encrypted_payloads
 
 # This method is not referenced
@@ -167,8 +175,8 @@ def get_cert_for_email(to_addr):
 	# support foo+ignore@bar.com -> foo@bar.com
 	multi_email = re.match('^([^\+]+)\+([^@]+)@(.*)$', to_addr)
 	if multi_email:
-		fixed_up_email = "%s@%s"%(multi_email.group(1), multi_email.group(3))
-		log("Multi-email %s converted to %s"%(to_addr, fixed_up_email))
+		fixed_up_email = "%s@%s" % (multi_email.group(1), multi_email.group(3))
+		log("Multi-email %s converted to %s" % (to_addr, fixed_up_email))
 		return get_cert_for_email(fixed_up_email)
 	return None
 	
@@ -192,7 +200,7 @@ def to_smime_handler( raw_message, recipients = None ):
 		if cert_and_email:
 			(to_cert, normal_email) = cert_and_email
 			unsmime_to.remove(addr)
-			log("Found cert "+to_cert+" for "+addr+": "+normal_email)
+			log("Found cert " + to_cert + " for " + addr + ": " + normal_email)
 			normalized_recipient.append((email.utils.parseaddr(addr)[0], normal_email))
 			x509 = X509.load_cert(to_cert, format=X509.FORMAT_PEM)
 			sk.push(x509)
@@ -203,18 +211,18 @@ def to_smime_handler( raw_message, recipients = None ):
 		p7 = s.encrypt( BIO.MemoryBuffer(raw_message.as_string()) )
 		# Output p7 in mail-friendly format.
 		out = BIO.MemoryBuffer()
-		out.write('From: '+from_addr+'\n')
+		out.write('From: ' + from_addr + '\n')
 		out.write('To: ' + raw_message['To'] + '\n')
 		if raw_message['Cc']:
 			out.write('Cc: ' + raw_message['Cc'] + '\n')
 		if raw_message['Bcc']:
 			out.write('Bcc: ' + raw_message['Bcc'] + '\n')
 		if raw_message['Subject']:
-			out.write('Subject: '+raw_message['Subject']+'\n')
+			out.write('Subject: '+ raw_message['Subject'] + '\n')
 		if cfg['default'].has_key('add_header') and cfg['default']['add_header'] == 'yes':
 			out.write('X-GPG-Mailgate: Encrypted by GPG Mailgate\n')
 		s.write(out, p7)
-		log("Sending message from "+from_addr+" to "+str(smime_to))
+		log("Sending message from " + from_addr + " to " + str(smime_to))
 		raw_msg = out.read()
 		send_msg(raw_msg, smime_to)
 	if len(unsmime_to):
@@ -273,13 +281,44 @@ log("Encrypting email to: %s" % ' '.join( map(lambda x: x[0], gpg_to) ))
 if cfg['default'].has_key('add_header') and cfg['default']['add_header'] == 'yes':
 	raw_message['X-GPG-Mailgate'] = 'Encrypted by GPG Mailgate'
 
-gpg_to_cmdline = list()
-gpg_to_smtp = list()
+gpg_to_smtp_mime = list()
+gpg_to_cmdline_mime = list()
+
+gpg_to_smtp_inline = list()
+gpg_to_cmdline_inline = list()
 for rcpt in gpg_to:
-	gpg_to_smtp.append(rcpt[0])
-	gpg_to_cmdline.extend(rcpt[1].split(','))
+	if cfg.has_key('pgp_style') and cfg['pgp_style'].has_key(rcpt[0]):
+		if cfg['pgp_style'][rcpt[0]] == 'mime':
+			gpg_to_smtp_mime.append(rcpt[0])
+			gpg_to_cmdline_mime.extend(rcpt[1].split(','))
+		elif cfg['pgp_style'][rcpt[0]] == 'inline':
+			gpg_to_smtp_inline.append(rcpt[0])
+			gpg_to_cmdline_inline.extend(rcpt[1].split(','))
+		else:
+			log("Style %s for recipient %s is not known. Use default as fallback." % (cfg['pgp_style'][rcpt[0]], rcpt[0]))
+			if cfg['default'].has_key('mime_conversion') and cfg['default']['mime_conversion'] == 'yes':
+				gpg_to_smtp_mime.append(rcpt[0])
+				gpg_to_cmdline_mime.extend(rcpt[1].split(','))
+			else:
+				gpg_to_smtp_inline.append(rcpt[0])
+				gpg_to_cmdline_inline.extend(rcpt[1].split(','))
+	elif cfg['default'].has_key('mime_conversion') and cfg['default']['mime_conversion'] == 'yes':
+		gpg_to_smtp_mime.append(rcpt[0])
+		gpg_to_cmdline_mime.extend(rcpt[1].split(','))
+	else:
+		gpg_to_smtp_inline.append(rcpt[0])
+		gpg_to_cmdline_inline.extend(rcpt[1].split(','))
 
-encrypted_payloads = encrypt_all_payloads( raw_message, gpg_to_cmdline )
-raw_message.set_payload( encrypted_payloads )
+if gpg_to_smtp_mime != list():
 
-send_msg( raw_message.as_string(), gpg_to_smtp )
+	raw_message_mime = copy.deepcopy(raw_message)
+	encrypted_payloads = encrypt_all_payloads_attachment_style( raw_message_mime, gpg_to_cmdline_mime )
+	raw_message_mime.set_payload( encrypted_payloads )
+
+	send_msg( raw_message_mime.as_string(), gpg_to_smtp_mime )
+if gpg_to_smtp_inline != list():
+
+	encrypted_payloads = encrypt_all_payloads_inline( raw_message, gpg_to_cmdline_inline )
+	raw_message.set_payload( encrypted_payloads )
+
+	send_msg( raw_message.as_string(), gpg_to_smtp_inline )
