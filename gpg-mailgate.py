@@ -109,53 +109,62 @@ def encrypt_all_payloads_inline( message, gpg_to_cmdline ):
 
 	for payload in message.get_payload():
 		if( type( payload.get_payload() ) == list ):
-			encrypted_payloads.extend( encrypt_all_payloads( payload, gpg_to_cmdline ) )
+			encrypted_payloads.extend( encrypt_all_payloads_inline( payload, gpg_to_cmdline ) )
 		else:
 			encrypted_payloads.append( encrypt_payload( payload, gpg_to_cmdline ) )
 	return encrypted_payloads
 
-def encrypt_all_payloads_attachment_style( message, gpg_to_cmdline ):
-	encrypted_payloads = list()
-	if type( message.get_payload() ) == str:
-		# Convert a plain text email into PGP/MIME attachment style.  Modeled after enigmail.
-		submsg1 = email.message.Message()
-		submsg1.set_payload("Version: 1\n")
-		submsg1.set_type("application/pgp-encrypted")
-		submsg1.set_param('PGP/MIME version identification', "", 'Content-Description' )
-		
-		submsg2 = email.message.Message()
-		submsg2.set_type("application/octet-stream")
-		submsg2.set_param('name', "encrypted.asc")
-		submsg2.set_param('OpenPGP encrypted message', "", 'Content-Description' )
-		submsg2.set_param('inline', "",                'Content-Disposition' )
-		submsg2.set_param('filename', "encrypted.asc", 'Content-Disposition' )
-		
-		# WTF!  It seems to swallow the first line.  Not sure why.  Perhaps
-		# it's skipping an imaginary blank line someplace. (ie skipping a header)
-		# Workaround it here by prepending a blank line.
-		submsg2.set_payload("\n" + message.get_payload())
-
-		message.preamble = "This is an OpenPGP/MIME encrypted message (RFC 2440 and 3156)"
-		
-		# Use this just to generate a MIME boundary string.
-		junk_msg = MIMEMultipart()
-		junk_str = junk_msg.as_string()  # WTF!  Without this, get_boundary() will return 'None'!
-		boundary = junk_msg.get_boundary()
-
-	    # This also modifies the boundary in the body of the message, ie it gets parsed.
-		if message.has_key('Content-Type'):
-			message.replace_header('Content-Type', "multipart/encrypted; protocol=\"application/pgp-encrypted\";\nboundary=\"%s\"\n" % boundary)
-		else:
-			message['Content-Type'] = "multipart/encrypted; protocol=\"application/pgp-encrypted\";\nboundary=\"%s\"\n" % boundary
-
-		return [ submsg1, encrypt_payload(submsg2, gpg_to_cmdline) ]
+def generate_attachment_pgp(message, submsg = None):
+	if submsg == None:
+		submsg = email.message.Message()
+		submsg.set_type("multipart/mixed")
+		submsg.set_param('inline', "", 'Content-Disposition' )
 
 	for payload in message.get_payload():
 		if( type( payload.get_payload() ) == list ):
-			encrypted_payloads.extend( encrypt_all_payloads(payload, gpg_to_cmdline) )
+			submsg.attach(generate_attachment_pgp(payload, submsg))
 		else:
-			encrypted_payloads.append( encrypt_payload(payload, gpg_to_cmdline) )
-	return encrypted_payloads
+			submsg.attach(payload)
+	return submsg
+
+def encrypt_all_payloads_attachment_style( message, gpg_to_cmdline ):
+	encrypted_payloads = list()
+	# Convert a plain text email into PGP/MIME attachment style.  Modeled after enigmail.
+	submsg1 = email.message.Message()
+	submsg1.set_payload("Version: 1\n")
+	submsg1.set_type("application/pgp-encrypted")
+	submsg1.set_param('PGP/MIME version identification', "", 'Content-Description' )
+	
+	submsg2 = email.message.Message()
+	submsg2.set_type("application/octet-stream")
+	submsg2.set_param('name', "encrypted.asc")
+	submsg2.set_param('OpenPGP encrypted message', "", 'Content-Description' )
+	submsg2.set_param('inline', "",                'Content-Disposition' )
+	submsg2.set_param('filename', "encrypted.asc", 'Content-Disposition' )
+	
+	if type ( message.get_payload() ) == str:
+		# WTF!  It seems to swallow the first line.  Not sure why.  Perhaps
+		# it's skipping an imaginary blank line someplace. (ie skipping a header)
+		# Workaround it here by prepending a blank line.
+		# This happens only on text only messages.
+		submsg2.set_payload("\n" + message.get_payload())
+	else:
+		submsg2.set_payload(generate_attachment_pgp(message).as_string())
+
+	message.preamble = "This is an OpenPGP/MIME encrypted message (RFC 2440 and 3156)"
+	
+	# Use this just to generate a MIME boundary string.
+	junk_msg = MIMEMultipart()
+	junk_str = junk_msg.as_string()  # WTF!  Without this, get_boundary() will return 'None'!
+	boundary = junk_msg.get_boundary()
+
+    # This also modifies the boundary in the body of the message, ie it gets parsed.
+	if message.has_key('Content-Type'):
+		message.replace_header('Content-Type', "multipart/encrypted; protocol=\"application/pgp-encrypted\";\nboundary=\"%s\"\n" % boundary)
+	else:
+		message['Content-Type'] = "multipart/encrypted; protocol=\"application/pgp-encrypted\";\nboundary=\"%s\"\n" % boundary
+
+	return [ submsg1, encrypt_payload(submsg2, gpg_to_cmdline) ]
 
 # This method is not referenced
 def get_msg( message ):
