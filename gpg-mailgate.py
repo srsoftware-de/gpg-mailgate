@@ -64,7 +64,7 @@ raw_message = email.message_from_string( raw )
 from_addr = raw_message['From']
 to_addrs = sys.argv[1:]
 
-def gpg_encrypt(raw_message, recipients):
+def gpg_encrypt( raw_message, recipients ):
 
 	if not get_bool_from_cfg('gpg', 'keyhome'):
 		log("No valid entry for gpg keyhome. Encryption aborted.")
@@ -317,7 +317,6 @@ def get_cert_for_email( to_addr, cert_path ):
 
 def get_bool_from_cfg( section, key = None, evaluation = None ):
 
-
 	if not (key is None) and not (evaluation is None):
 		return section in cfg and cfg[section].get(key) == evaluation
 
@@ -350,6 +349,13 @@ def generate_message_from_payloads( payloads, submsg = None ):
 
 	return submsg
 
+def get_first_payload( payloads ):
+
+	if payloads.is_multipart():
+		return get_first_payload(payloads.get_payload(0))
+	else:
+		return payloads
+
 def send_msg( message, recipients ):
 
 	recipients = filter(None, recipients)
@@ -369,6 +375,27 @@ def sort_recipients( raw_message, from_addr, to_addrs ):
 	recipients_left = list()
 	for recipient in to_addrs:
 		recipients_left.append(sanitize_case_sense(recipient))
+
+	# There is no need for nested encryption
+	first_payload = get_first_payload(raw_message)
+	if first_payload.get_content_type() == 'application/pkcs7-mime':
+		if verbose:
+			log("Message is already encrypted with S/MIME. Encryption aborted.")
+		send_msg(raw_message.as_string(), recipients_left)
+		return
+
+	first_payload = first_payload.get_payload(decode=True)
+	if "-----BEGIN PGP MESSAGE-----" in first_payload and "-----END PGP MESSAGE-----" in first_payload:
+		if verbose:
+			log("Message is already encrypted as PGP/INLINE. Encryption aborted.")
+		send_msg(raw_message.as_string(), recipients_left)
+		return
+
+	if raw_message.get_content_type() == 'multipart/encrypted':
+		if verbose:
+			log("Message is already encrypted. Encryption aborted.")
+		send_msg(raw_message.as_string(), recipients_left)
+		return
 
 	# Encrypt mails for recipients with known PGP keys
 	recipients_left = gpg_encrypt(raw_message, recipients_left)
