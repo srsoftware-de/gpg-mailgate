@@ -4,7 +4,7 @@
 add_header = yes
 
 # whether we should only sign emails if they are explicitly defined in
-#  the key mappings below ([keymap] section)
+# the key mappings below ([keymap] section)
 # this means gpg-mailgate won't automatically detect PGP recipients
 keymap_only = no
 
@@ -12,11 +12,12 @@ keymap_only = no
 # (Default is to use older inline-style PGP encoding.)
 mime_conversion = yes
 
-# RFC 2821 defines that the user part of a mail address should be treated case sensitive.
-# However in the real world this is ignored very often. This option enforces that
-# email addresses are treated according to RFC 2821. If you encounter any problems
-# based on the case sensitivity of mail addresses, set this setting to yes.
-mail_case_sensitive = no
+# RFC 2821 defines that the user part (User@domain.tld) of a mail address should be treated case sensitive.
+# However, in the real world this is ignored very often. This option disables the RFC 2821
+# compatibility so both the user part and the domain part are treated case insensitive.
+# Disabling the compatibility is more convenient to users. So if you know that your
+# recipients all ignore the RFC you could this to yes.
+mail_case_insensensitive = no
 
 [gpg]
 # the directory where gpg-mailgate public keys are stored

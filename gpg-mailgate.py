@@ -48,17 +48,15 @@ for sect in _cfg.sections():
 		cfg[sect][name] = value
 
 def log(msg):
-	if cfg.has_key('logging') and cfg['logging'].has_key('file'):
-		if cfg['logging']['file'] == "syslog":
+	if 'logging' in cfg and 'file' in cfg['logging']:
+		if cfg['logging'].get('file') == "syslog":
 			syslog.syslog(syslog.LOG_INFO | syslog.LOG_MAIL, msg)
 		else:
 			logfile = open(cfg['logging']['file'], 'a')
 			logfile.write(msg + "\n")
 			logfile.close()
 
-verbose = cfg.has_key('logging') and cfg['logging'].has_key('verbose') and cfg['logging']['verbose'] == 'yes'
-
-CERT_PATH = cfg['smime']['cert_path']+"/"
+verbose = 'logging' in cfg and 'verbose' in cfg['logging'] and cfg['logging'].get('verbose') == 'yes'
 
 # Read e-mail from stdin
 raw = sys.stdin.read()
@@ -66,43 +64,90 @@ raw_message = email.message_from_string( raw )
 from_addr = raw_message['From']
 to_addrs = sys.argv[1:]
 
-def send_msg( message, recipients = None ):
-	if recipients == None:
-		recipients = to_addrs
-	recipients = filter(None, recipients)
-	if recipients:
-		log("Sending email to: <%s>" % '> <'.join( recipients ))
-		relay = (cfg['relay']['host'], int(cfg['relay']['port']))
-		smtp = smtplib.SMTP(relay[0], relay[1])
-		smtp.sendmail( from_addr, recipients, message )
-	else:
-		log("No recipient found");
+def gpg_encrypt(raw_message, recipients):
 
-def encrypt_payload( payload, gpg_to_cmdline ):
-	raw_payload = payload.get_payload(decode=True)
-	if "-----BEGIN PGP MESSAGE-----" in raw_payload and "-----END PGP MESSAGE-----" in raw_payload:
-		return payload
-	gpg = GnuPG.GPGEncryptor( cfg['gpg']['keyhome'], gpg_to_cmdline, payload.get_content_charset() )
-	gpg.update( raw_payload )
-	encrypted_data, returncode = gpg.encrypt()
-	if verbose:
-		log("Return code from encryption=%d (0 indicates success)." % returncode)
-	payload.set_payload( encrypted_data )
-	isAttachment = payload.get_param( 'attachment', None, 'Content-Disposition' ) is not None
-	if isAttachment:
-		filename = payload.get_filename()
-		if filename:
-			pgpFilename = filename + ".pgp"
-			if payload.get('Content-Disposition') is not None:
-				payload.set_param( 'filename', pgpFilename, 'Content-Disposition' )
-			if payload.get('Content-Type') is not None:
-				if payload.get_param( 'name' ) is not None:
-					payload.set_param( 'name', pgpFilename )
-	if payload.get('Content-Transfer-Encoding') is not None:
-		payload.replace_header( 'Content-Transfer-Encoding', "7bit" )
-	return payload
+	if not get_bool_from_cfg('gpg', 'keyhome'):
+		log("No valid entry for gpg keyhome. Encryption aborted.")
+		return recipients
+
+	keys = GnuPG.public_keys( cfg['gpg']['keyhome'] )
+	for fingerprint in keys:
+		keys[fingerprint] = sanitize_case_sense(keys[fingerprint])
+
+	gpg_to = list()
+	ungpg_to = list()
+
+	for to in recipients:
+
+		if to in keys.values() and not get_bool_from_cfg('default', 'keymap_only', 'yes'):
+			gpg_to.append( (to, to) )
+		elif get_bool_from_cfg('keymap') and to in cfg['keymap']:
+			log("Keymap has key '%s'" % cfg['keymap'][to] )
+			# Check we've got a matching key!  If not, decline to attempt encryption.
+			if not cfg['keymap'][to] in keys:
+				log("Key '%s' in keymap not found in keyring for email address '%s'.  Won't encrypt." % (cfg['keymap'][to], to))
+				ungpg_to.append(to)
+			else:
+				gpg_to.append( (to, cfg['keymap'][to]) )
+		else:
+			if verbose:
+				log("Recipient (%s) not in PGP domain list." % to)
+			ungpg_to.append(to)
+
+	if gpg_to != list():
+		log("Encrypting email to: %s" % ' '.join( map(lambda x: x[0], gpg_to) ))
+
+		gpg_to_smtp_mime = list()
+		gpg_to_cmdline_mime = list()
+
+		gpg_to_smtp_inline = list()
+		gpg_to_cmdline_inline = list()
+
+		for rcpt in gpg_to:
+			if get_bool_from_cfg('pgp_style', rcpt[0], 'mime'):
+				gpg_to_smtp_mime.append(rcpt[0])
+				gpg_to_cmdline_mime.extend(rcpt[1].split(','))
+			elif get_bool_from_cfg('pgp_style', rcpt[0], 'inline'):
+				gpg_to_smtp_inline.append(rcpt[0])
+				gpg_to_cmdline_inline.extend(rcpt[1].split(','))
+			else:
+				# Log message only if an unknown style is defined
+				if get_bool_from_cfg('pgp_style', rcpt[0]):
+					log("Style %s for recipient %s is not known. Use default as fallback." % (cfg['pgp_style'][rcpt[0]], rcpt[0]))
+
+				if get_bool_from_cfg('default', 'mime_conversion', 'yes'):
+					gpg_to_smtp_mime.append(rcpt[0])
+					gpg_to_cmdline_mime.extend(rcpt[1].split(','))
+				else:
+					gpg_to_smtp_inline.append(rcpt[0])
+					gpg_to_cmdline_inline.extend(rcpt[1].split(','))
+
+		if gpg_to_smtp_mime != list():
+			raw_message_mime = copy.deepcopy(raw_message)
+
+			if get_bool_from_cfg('default', 'add_header', 'yes'):
+				raw_message_mime['X-GPG-Mailgate'] = 'Encrypted by GPG Mailgate'
+
+			encrypted_payloads = encrypt_all_payloads_mime( raw_message_mime, gpg_to_cmdline_mime )
+			raw_message_mime.set_payload( encrypted_payloads )
+
+			send_msg( raw_message_mime.as_string(), gpg_to_smtp_mime )
+
+		if gpg_to_smtp_inline != list():
+			raw_message_inline = copy.deepcopy(raw_message)
+
+			if get_bool_from_cfg('default', 'add_header', 'yes'):
+				raw_message_inline['X-GPG-Mailgate'] = 'Encrypted by GPG Mailgate'
+
+			encrypted_payloads = encrypt_all_payloads_inline( raw_message_inline, gpg_to_cmdline_inline )
+			raw_message_inline.set_payload( encrypted_payloads )
+
+			send_msg( raw_message_inline.as_string(), gpg_to_smtp_inline )
+
+	return ungpg_to
 
 def encrypt_all_payloads_inline( message, gpg_to_cmdline ):
+
 	encrypted_payloads = list()
 	if type( message.get_payload() ) == str:
 		return encrypt_payload( message, gpg_to_cmdline ).get_payload()
@@ -112,36 +157,24 @@ def encrypt_all_payloads_inline( message, gpg_to_cmdline ):
 			encrypted_payloads.extend( encrypt_all_payloads_inline( payload, gpg_to_cmdline ) )
 		else:
 			encrypted_payloads.append( encrypt_payload( payload, gpg_to_cmdline ) )
+
 	return encrypted_payloads
 
-def generate_attachment_pgp(message, submsg = None):
-	if submsg == None:
-		submsg = email.message.Message()
-		submsg.set_type("multipart/mixed")
-		submsg.set_param('inline', "", 'Content-Disposition' )
+def encrypt_all_payloads_mime( message, gpg_to_cmdline ):
 
-	for payload in message.get_payload():
-		if( type( payload.get_payload() ) == list ):
-			submsg.attach(generate_attachment_pgp(payload, submsg))
-		else:
-			submsg.attach(payload)
-	return submsg
-
-def encrypt_all_payloads_attachment_style( message, gpg_to_cmdline ):
-	encrypted_payloads = list()
 	# Convert a plain text email into PGP/MIME attachment style.  Modeled after enigmail.
 	submsg1 = email.message.Message()
 	submsg1.set_payload("Version: 1\n")
 	submsg1.set_type("application/pgp-encrypted")
 	submsg1.set_param('PGP/MIME version identification', "", 'Content-Description' )
-	
+
 	submsg2 = email.message.Message()
 	submsg2.set_type("application/octet-stream")
 	submsg2.set_param('name', "encrypted.asc")
 	submsg2.set_param('OpenPGP encrypted message', "", 'Content-Description' )
 	submsg2.set_param('inline', "",                'Content-Disposition' )
 	submsg2.set_param('filename', "encrypted.asc", 'Content-Disposition' )
-	
+
 	if type ( message.get_payload() ) == str:
 		# WTF!  It seems to swallow the first line.  Not sure why.  Perhaps
 		# it's skipping an imaginary blank line someplace. (ie skipping a header)
@@ -149,10 +182,13 @@ def encrypt_all_payloads_attachment_style( message, gpg_to_cmdline ):
 		# This happens only on text only messages.
 		submsg2.set_payload("\n" + message.get_payload())
 	else:
-		submsg2.set_payload(generate_attachment_pgp(message).as_string())
+		processed_payloads = generate_message_from_payloads(message)
+		processed_payloads.set_type("multipart/mixed")
+		processed_payloads.set_param('inline', "", 'Content-Disposition' )
+		submsg2.set_payload(processed_payloads.as_string())
 
 	message.preamble = "This is an OpenPGP/MIME encrypted message (RFC 2440 and 3156)"
-	
+
 	# Use this just to generate a MIME boundary string.
 	junk_msg = MIMEMultipart()
 	junk_str = junk_msg.as_string()  # WTF!  Without this, get_boundary() will return 'None'!
@@ -166,58 +202,69 @@ def encrypt_all_payloads_attachment_style( message, gpg_to_cmdline ):
 
 	return [ submsg1, encrypt_payload(submsg2, gpg_to_cmdline) ]
 
-# This method is not referenced
-def get_msg( message ):
-	if not message.is_multipart():
-		return message.get_payload()
-	return '\n\n'.join( [str(m) for m in message.get_payload()] )
+def encrypt_payload( payload, gpg_to_cmdline ):
+
+	raw_payload = payload.get_payload(decode=True)
+	if "-----BEGIN PGP MESSAGE-----" in raw_payload and "-----END PGP MESSAGE-----" in raw_payload:
+		if verbose:
+			log("Message is already pgp encrypted. No nested encryption needed.")
+		return payload
+
+	# No check is needed for cfg['gpg']['keyhome'] as this is already done in method gpg_encrypt
+	gpg = GnuPG.GPGEncryptor( cfg['gpg']['keyhome'], gpg_to_cmdline, payload.get_content_charset() )
+	gpg.update( raw_payload )
+	encrypted_data, returncode = gpg.encrypt()
+	if verbose:
+		log("Return code from encryption=%d (0 indicates success)." % returncode)
+	if returncode != 0:
+		log("Encrytion failed with return code %d. Encryption aborted.")
+		return payload
+
+	payload.set_payload( encrypted_data )
+	isAttachment = payload.get_param( 'attachment', None, 'Content-Disposition' ) is not None
+
+	if isAttachment:
+		filename = payload.get_filename()
+		if filename:
+			pgpFilename = filename + ".pgp"
+			if not (payload.get('Content-Disposition') is None):
+				payload.set_param( 'filename', pgpFilename, 'Content-Disposition' )
+			if not (payload.get('Content-Type') is None) and not (payload.get_param( 'name' ) is None):
+				payload.set_param( 'name', pgpFilename )
+	if not (payload.get('Content-Transfer-Encoding') is None):
+		payload.replace_header( 'Content-Transfer-Encoding', "7bit" )
+
+	return payload
+
+def smime_encrypt( raw_message, recipients ):
 	
-def get_cert_for_email(to_addr):
-	files_in_directory = os.listdir(CERT_PATH)
-	for filename in files_in_directory:
-		file_path = os.path.join(CERT_PATH, filename)
-		if not os.path.isfile(file_path): continue
-		if cfg['default'].has_key('mail_case_sensitive') and cfg['default']['mail_case_sensitive'] == 'yes':
-			if filename == to_addr: return (file_path, to_addr)
-		else:
-			if filename.lower() == to_addr: return (file_path, to_addr)
-	# support foo+ignore@bar.com -> foo@bar.com
-	multi_email = re.match('^([^\+]+)\+([^@]+)@(.*)$', to_addr)
-	if multi_email:
-		fixed_up_email = "%s@%s" % (multi_email.group(1), multi_email.group(3))
-		log("Multi-email %s converted to %s" % (to_addr, fixed_up_email))
-		return get_cert_for_email(fixed_up_email)
-	return None
-	
-def to_smime_handler( raw_message, recipients = None ):
-	if recipients == None:
-		recipients = to_addrs
+	if not get_bool_from_cfg('smime', 'cert_path'):
+		log("No valid path for S/MIME certs found in config file. S/MIME encryption aborted.")
+		return recipients
+
+	cert_path = cfg['smime']['cert_path']+"/"
 	s = SMIME.SMIME()
 	sk = X509.X509_Stack()
-	normalized_recipient = []
-	unsmime_to = list(recipients)
+	smime_to = list()
+	unsmime_to = list()
+
 	for addr in recipients:
-		addr_addr = email.utils.parseaddr(addr)[1]
-		
-		if cfg['default'].has_key('mail_case_sensitive') and cfg['default']['mail_case_sensitive'] == 'yes':
-			splitted_addr_addr = addr_addr.split('@')
-			addr_addr = splitted_addr_addr[0] + '@' + splitted_addr_addr[1].lower()
-		else:
-			addr_addr = addr_addr.lower()
-		
-		cert_and_email = get_cert_for_email(addr_addr)
-		if cert_and_email:
+		cert_and_email = get_cert_for_email(addr, cert_path)
+
+		if not (cert_and_email is None):
 			(to_cert, normal_email) = cert_and_email
-			unsmime_to.remove(addr)
-			log("Found cert " + to_cert + " for " + addr + ": " + normal_email)
-			normalized_recipient.append((email.utils.parseaddr(addr)[0], normal_email))
+			if verbose:
+				log("Found cert " + to_cert + " for " + addr + ": " + normal_email)
+			smime_to.append(addr)
 			x509 = X509.load_cert(to_cert, format=X509.FORMAT_PEM)
 			sk.push(x509)
-	if len(normalized_recipient):
-		smime_to = [email.utils.formataddr(x) for x in normalized_recipient]
+		else:
+			unsmime_to.append(addr)
+
+	if smime_to != list():
 		s.set_x509_stack(sk)
 		s.set_cipher(SMIME.Cipher('aes_192_cbc'))
-		p7 = s.encrypt( BIO.MemoryBuffer(raw_message.as_string()) )
+		p7 = s.encrypt( BIO.MemoryBuffer( raw_message.as_string() ) )
 		# Output p7 in mail-friendly format.
 		out = BIO.MemoryBuffer()
 		out.write('From: ' + from_addr + '\n')
@@ -228,106 +275,114 @@ def to_smime_handler( raw_message, recipients = None ):
 			out.write('Bcc: ' + raw_message['Bcc'] + '\n')
 		if raw_message['Subject']:
 			out.write('Subject: '+ raw_message['Subject'] + '\n')
-		if cfg['default'].has_key('add_header') and cfg['default']['add_header'] == 'yes':
+
+		if get_bool_from_cfg('default', 'add_header', 'yes'):
 			out.write('X-GPG-Mailgate: Encrypted by GPG Mailgate\n')
+
 		s.write(out, p7)
-		log("Sending message from " + from_addr + " to " + str(smime_to))
-		raw_msg = out.read()
-		send_msg(raw_msg, smime_to)
-	if len(unsmime_to):
-		log("Unable to find valid S/MIME certificates for " + str(unsmime_to))
-		send_msg(raw_message.as_string(), unsmime_to)
+
+		if verbose:
+			log("Sending message from " + from_addr + " to " + str(smime_to))
+
+		send_msg(out.read(), smime_to)
+	if unsmime_to != list():
+		if verbose:
+			log("Unable to find valid S/MIME certificates for " + str(unsmime_to))
+
+	return unsmime_to
+
+def get_cert_for_email( to_addr, cert_path ):
+
+	files_in_directory = os.listdir(cert_path)
+	for filename in files_in_directory:
+		file_path = os.path.join(cert_path, filename)
+		if not os.path.isfile(file_path):
+			continue
+
+		if get_bool_from_cfg('default', 'mail_case_insensitive', 'yes'):
+			if filename.lower() == to_addr:
+				return (file_path, to_addr)
+		else:
+			if filename == to_addr:
+				return (file_path, to_addr)
+	# support foo+ignore@bar.com -> foo@bar.com
+	multi_email = re.match('^([^\+]+)\+([^@]+)@(.*)$', to_addr)
+	if multi_email:
+		fixed_up_email = "%s@%s" % (multi_email.group(1), multi_email.group(3))
+		if verbose:
+			log("Multi-email %s converted to %s" % (to_addr, fixed_up_email))
+		return get_cert_for_email(fixed_up_email)
+
 	return None
 
+def get_bool_from_cfg( section, key = None, evaluation = None ):
 
-keys = GnuPG.public_keys( cfg['gpg']['keyhome'] )
-if cfg['default'].has_key('mail_case_sensitive') and cfg['default']['mail_case_sensitive'] == 'yes':
-	for fingerprint in keys:
-		splitted_address = keys[fingerprint].split('@')
-		keys[fingerprint] = splitted_address[0] + '@' + splitted_address[1].lower()
-else:
-	for fingerprint in keys:	
-		keys[fingerprint] = keys[fingerprint].lower()
 
-gpg_to = list()
-ungpg_to = list()
+	if not (key is None) and not (evaluation is None):
+		return section in cfg and cfg[section].get(key) == evaluation
 
-for to in to_addrs:
-	if cfg['default'].has_key('mail_case_sensitive') and cfg['default']['mail_case_sensitive'] == 'yes':
-		splitted_to = to.split('@')
-		to = splitted_to[0] + '@' + splitted_to[1].lower()
-	else:	
-		to = to.lower()
+	elif not (key is None) and (evaluation is None):
+		return section in cfg and not (cfg[section].get(key) is None)
 
-	if to in keys.values() and not ( cfg['default'].has_key('keymap_only') and cfg['default']['keymap_only'] == 'yes'  ):
-		gpg_to.append( (to, to) )
-	elif cfg.has_key('keymap') and cfg['keymap'].has_key(to):
-		log("Keymap has key '%s'" % cfg['keymap'][to] )
-		# Check we've got a matching key!  If not, decline to attempt encryption.
-		if not keys.has_key(cfg['keymap'][to]):
-			log("Key '%s' in keymap not found in keyring for email address '%s'.  Won't encrypt." % (cfg['keymap'][to], to))
-			ungpg_to.append(to)
-		else:
-			gpg_to.append( (to, cfg['keymap'][to]) )
 	else:
-		if verbose:
-			log("Recipient (%s) not in PGP domain list." % to)
-		ungpg_to.append(to)
+		return section in cfg
 
-if gpg_to == list():
-	if cfg['default'].has_key('add_header') and cfg['default']['add_header'] == 'yes':
-		raw_message['X-GPG-Mailgate'] = 'Not encrypted, public key not found'
-	if verbose:
-		log("No PGP encrypted recipients.")
-	to_smime_handler( raw_message )
-	exit()
+def sanitize_case_sense( address ):
 
-if ungpg_to != list():
-	to_smime_handler( raw_message, ungpg_to )
-
-log("Encrypting email to: %s" % ' '.join( map(lambda x: x[0], gpg_to) ))
-
-if cfg['default'].has_key('add_header') and cfg['default']['add_header'] == 'yes':
-	raw_message['X-GPG-Mailgate'] = 'Encrypted by GPG Mailgate'
-
-gpg_to_smtp_mime = list()
-gpg_to_cmdline_mime = list()
-
-gpg_to_smtp_inline = list()
-gpg_to_cmdline_inline = list()
-for rcpt in gpg_to:
-	if cfg.has_key('pgp_style') and cfg['pgp_style'].has_key(rcpt[0]):
-		if cfg['pgp_style'][rcpt[0]] == 'mime':
-			gpg_to_smtp_mime.append(rcpt[0])
-			gpg_to_cmdline_mime.extend(rcpt[1].split(','))
-		elif cfg['pgp_style'][rcpt[0]] == 'inline':
-			gpg_to_smtp_inline.append(rcpt[0])
-			gpg_to_cmdline_inline.extend(rcpt[1].split(','))
-		else:
-			log("Style %s for recipient %s is not known. Use default as fallback." % (cfg['pgp_style'][rcpt[0]], rcpt[0]))
-			if cfg['default'].has_key('mime_conversion') and cfg['default']['mime_conversion'] == 'yes':
-				gpg_to_smtp_mime.append(rcpt[0])
-				gpg_to_cmdline_mime.extend(rcpt[1].split(','))
-			else:
-				gpg_to_smtp_inline.append(rcpt[0])
-				gpg_to_cmdline_inline.extend(rcpt[1].split(','))
-	elif cfg['default'].has_key('mime_conversion') and cfg['default']['mime_conversion'] == 'yes':
-		gpg_to_smtp_mime.append(rcpt[0])
-		gpg_to_cmdline_mime.extend(rcpt[1].split(','))
+	if get_bool_from_cfg('default', 'mail_case_insensitive', 'yes'):
+		address = address.lower()
 	else:
-		gpg_to_smtp_inline.append(rcpt[0])
-		gpg_to_cmdline_inline.extend(rcpt[1].split(','))
+		splitted_address = address.split('@')
+		address = splitted_address[0] + '@' + splitted_address[1].lower()
 
-if gpg_to_smtp_mime != list():
+	return address
 
-	raw_message_mime = copy.deepcopy(raw_message)
-	encrypted_payloads = encrypt_all_payloads_attachment_style( raw_message_mime, gpg_to_cmdline_mime )
-	raw_message_mime.set_payload( encrypted_payloads )
+def generate_message_from_payloads( payloads, submsg = None ):
 
-	send_msg( raw_message_mime.as_string(), gpg_to_smtp_mime )
-if gpg_to_smtp_inline != list():
+	if submsg == None:
+		submsg = email.message.Message()
 
-	encrypted_payloads = encrypt_all_payloads_inline( raw_message, gpg_to_cmdline_inline )
-	raw_message.set_payload( encrypted_payloads )
+	for payload in payloads.get_payload():
+		if( type( payload.get_payload() ) == list ):
+			submsg.attach(generate_message_from_payloads(payload, submsg))
+		else:
+			submsg.attach(payload)
 
-	send_msg( raw_message.as_string(), gpg_to_smtp_inline )
+	return submsg
+
+def send_msg( message, recipients ):
+
+	recipients = filter(None, recipients)
+	if recipients:
+		if not (get_bool_from_cfg('relay', 'host') and get_bool_from_cfg('relay', 'port')):
+			log("Missing settings for relay. Sending email aborted.")
+			return None
+		log("Sending email to: <%s>" % '> <'.join( recipients ))
+		relay = (cfg['relay']['host'], int(cfg['relay']['port']))
+		smtp = smtplib.SMTP(relay[0], relay[1])
+		smtp.sendmail( from_addr, recipients, message )
+	else:
+		log("No recipient found")
+
+def sort_recipients( raw_message, from_addr, to_addrs ):
+
+	recipients_left = list()
+	for recipient in to_addrs:
+		recipients_left.append(sanitize_case_sense(recipient))
+
+	# Encrypt mails for recipients with known PGP keys
+	recipients_left = gpg_encrypt(raw_message, recipients_left)
+	if recipients_left == list():
+		return
+
+	# Encrypt mails for recipients with known S/MIME certificate
+	recipients_left = smime_encrypt(raw_message, recipients_left)
+	if recipients_left == list():
+		return
+
+	# Send out mail to recipients which are left
+	send_msg(raw_message.as_string(), recipients_left)
+
+
+# Let's start
+sort_recipients(raw_message, from_addr, to_addrs)
