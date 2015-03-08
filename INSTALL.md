@@ -8,11 +8,18 @@
  3. Install some python dependencies `apt-get install python-m2crypto python-markdown python-requests python-mysqldb` (for linux distributions based on Debian. If you have a non Debian based distribution, the install command might be different)
 
  4. Place `gpg-mailgate.py` and `register-handler.py` in `/usr/local/bin/`
+
+ 5. Make sure that `gpg-mailgate.py` and `register-handler.py` are executable
+
+        chmod u+x /usr/local/bin/gpg-mailgate.py
+        chmod u+x /usr/local/bin/register-handler.py
+        chown nobody:nogroup /usr/local/bin/gpg-mailgate.py
+        chown nobody:nogroup /usr/local/bin/register-handler.py
  
- 5. Place the GnuPG directory in `/usr/local/lib/python2.7/dist-packages` (replace 2.7 with your
+ 6. Place the GnuPG directory in `/usr/local/lib/python2.7/dist-packages` (replace 2.7 with your
     Python version)
  
- 6. Add the following to the end of `/etc/postfix/master.cf`
+ 7. Add the following to the end of `/etc/postfix/master.cf`
 
         gpg-mailgate    unix    -   n   n   -   -   pipe
             flags= user=nobody argv=/usr/local/bin/gpg-mailgate.py ${recipient}
@@ -27,25 +34,26 @@
             -o mynetworks=127.0.0.0/8
             -o smtpd_authorized_xforward_hosts=127.0.0.0/8
 
- 7. Add the following to `/etc/postfix/main.cf`
+ 8. Add the following to `/etc/postfix/main.cf`
 
         content_filter = gpg-mailgate
         
- 8. Add `register:	|/usr/local/bin/register-handler.py` to `/etc/aliases`
+ 9. Add `register:	|/usr/local/bin/register-handler.py` to `/etc/aliases`
  
- 9. Update postfix's alias database with `postalias /etc/aliases`
+ 10. Update postfix's alias database with `postalias /etc/aliases`
 
- 10. Restart postfix.
+ 11. Restart postfix.
 
- 11. Create a dedicated user to store the public keys with these example commands:
+ 12. Setup a place to store public keys and certificates with these example commands:
 
         usermod -d /var/gpg nobody
+
+    - If you encounter any errors when using this command you might need to kill active processes from nobody
+
         mkdir -p /var/gpg/.gnupg
         mkdir -p /var/smime/certs
-        mkdir -p /var/gpgmailgate/register_templates
         chown -R nobody /var/gpg
         chown -R nobody /var/smime
-		chown -R nobody /var/gpgmailgate
         chmod 700 /var/gpg/.gnupg
         sudo -u nobody /usr/bin/gpg --homedir=/var/gpg/.gnupg --import /some/public.key
 
@@ -53,7 +61,7 @@
     - `/some/public.key` can be deleted after importation
     - Confirm that it's working: `sudo -u nobody /usr/bin/gpg --list-keys --homedir=/var/gpg/.gnupg`
 
- 12. Create directories for storing email templates:
+ 13. Create directories for storing email templates:
 
         mkdir -p /var/gpgmailgate/register_templates
 		mkdir -p /var/gpgmailgate/cron_templates
@@ -62,5 +70,5 @@
     - Place the corresponding directories from this project in the created ones 
     - Edit them if you want to
 
- 13. [Install gpg-mailgate-web] (gpg-mailgate-web/README)
+ 14. [Install gpg-mailgate-web] (gpg-mailgate-web/README)
  
