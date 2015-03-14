@@ -183,8 +183,6 @@ def encrypt_all_payloads_mime( message, gpg_to_cmdline ):
 		submsg2.set_payload("\n" + message.get_payload())
 	else:
 		processed_payloads = generate_message_from_payloads(message)
-		processed_payloads.set_type("multipart/mixed")
-		processed_payloads.set_param('inline', "", 'Content-Disposition' )
 		submsg2.set_payload(processed_payloads.as_string())
 
 	message.preamble = "This is an OpenPGP/MIME encrypted message (RFC 2440 and 3156)"
@@ -339,11 +337,11 @@ def sanitize_case_sense( address ):
 def generate_message_from_payloads( payloads, submsg = None ):
 
 	if submsg == None:
-		submsg = email.message.Message()
+		submsg = email.mime.multipart.MIMEMultipart(payloads.get_content_subtype())
 
 	for payload in payloads.get_payload():
 		if( type( payload.get_payload() ) == list ):
-			submsg.attach(generate_message_from_payloads(payload, submsg))
+			submsg.attach(attach_payload_list_to_message(payload, email.mime.multipart.MIMEMultipart(payload.get_content_subtype())))
 		else:
 			submsg.attach(payload)
 
