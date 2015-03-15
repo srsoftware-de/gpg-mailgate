@@ -50,12 +50,12 @@
 
     - If you encounter any errors when using this command you might need to kill active processes from nobody
 
-        `mkdir -p /var/gpg/.gnupg
+        mkdir -p /var/gpg/.gnupg
         mkdir -p /var/smime/certs
         chown -R nobody /var/gpg
         chown -R nobody /var/smime
         chmod 700 /var/gpg/.gnupg
-        sudo -u nobody /usr/bin/gpg --homedir=/var/gpg/.gnupg --import /some/public.key`   
+        sudo -u nobody /usr/bin/gpg --homedir=/var/gpg/.gnupg --import /some/public.key
 
     - Replace `/some/public.key` with the location of a public key
     - `/some/public.key` can be deleted after importation
