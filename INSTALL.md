@@ -48,7 +48,7 @@
 
         usermod -d /var/gpg nobody
 
-    - If you encounter any errors when using this command you might need to kill active processes from nobody
+    If you encounter any errors when using this command you might need to kill active processes from nobody
 
         mkdir -p /var/gpg/.gnupg
         mkdir -p /var/smime/certs
