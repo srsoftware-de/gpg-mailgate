@@ -17,7 +17,7 @@ mime_conversion = yes
 # compatibility so both the user part and the domain part are treated case insensitive.
 # Disabling the compatibility is more convenient to users. So if you know that your
 # recipients all ignore the RFC you could this to yes.
-mail_case_insensensitive = no
+mail_case_insensitive = no
 
 [gpg]
 # the directory where gpg-mailgate public keys are stored
