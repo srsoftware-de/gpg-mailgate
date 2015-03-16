@@ -215,7 +215,7 @@ def encrypt_payload( payload, gpg_to_cmdline ):
 	if verbose:
 		log("Return code from encryption=%d (0 indicates success)." % returncode)
 	if returncode != 0:
-		log("Encrytion failed with return code %d. Encryption aborted.")
+		log("Encrytion failed with return code %d. Encryption aborted." % returncode)
 		return payload
 
 	payload.set_payload( encrypted_data )
