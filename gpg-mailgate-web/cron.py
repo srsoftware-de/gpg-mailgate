@@ -24,14 +24,18 @@ import GnuPG
 import MySQLdb
 import smtplib
 import markdown
+import syslog
 from email.MIMEText import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 def appendLog(msg):
-	if cfg.has_key('logging') and cfg['logging'].has_key('file'):
-		log = open(cfg['logging']['file'], 'a')
-		log.write(msg + "\n")
-		log.close()
+	if 'logging' in cfg and 'file' in cfg['logging']:
+		if cfg['logging'].get('file') == "syslog":
+			syslog.syslog(syslog.LOG_INFO | syslog.LOG_MAIL, msg)
+		else:
+			logfile = open(cfg['logging']['file'], 'a')
+			logfile.write(msg + "\n")
+			logfile.close()
 
 def send_msg( mailsubject, messagefile, recipients = None ):
 	mailbody = file( cfg['cron']['mail_templates'] + "/" + messagefile).read()
