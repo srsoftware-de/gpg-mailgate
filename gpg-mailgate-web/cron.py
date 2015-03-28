@@ -48,9 +48,12 @@ def send_msg( mailsubject, messagefile, recipients = None ):
 	msg.attach(MIMEText(mailbody, 'plain'))
 	msg.attach(MIMEText(markdown.markdown(mailbody), 'html'))
 	
-	relay = ("127.0.0.1", 10028)
-	smtp = smtplib.SMTP(relay[0], relay[1])
-	smtp.sendmail( cfg['cron']['notification_email'], recipients, msg.as_string() )
+	if 'relay' in cfg and 'host' in cfg['relay'] and 'port' in cfg['relay']:
+		relay = (cfg['relay']['host'], int(cfg['relay']['port']))
+		smtp = smtplib.SMTP(relay[0], relay[1])
+		smtp.sendmail( cfg['cron']['notification_email'], recipients, msg.as_string() )
+	else:
+		appendLog("Could not send mail due to wrong configuration")
 
 # Read configuration from /etc/gpg-mailgate.conf
 _cfg = RawConfigParser()
