@@ -79,16 +79,18 @@ def gpg_encrypt( raw_message, recipients ):
 
 	for to in recipients:
 
+		# Check if recipient is in keymap
+		if get_bool_from_cfg('keymap', to):
+			log("Keymap has key '%s'" % cfg['keymap'][to])
+			# Check we've got a matching key!
+			if cfg['keymap'][to] in keys:
+				gpg_to.append( (to, cfg['keymap'][to]) )
+				continue
+			else:
+				log("Key '%s' in keymap not found in keyring for email address '%s'." % (cfg['keymap'][to], to))
+
 		if to in keys.values() and not get_bool_from_cfg('default', 'keymap_only', 'yes'):
 			gpg_to.append( (to, to) )
-		elif get_bool_from_cfg('keymap') and to in cfg['keymap']:
-			log("Keymap has key '%s'" % cfg['keymap'][to] )
-			# Check we've got a matching key!  If not, decline to attempt encryption.
-			if not cfg['keymap'][to] in keys:
-				log("Key '%s' in keymap not found in keyring for email address '%s'.  Won't encrypt." % (cfg['keymap'][to], to))
-				ungpg_to.append(to)
-			else:
-				gpg_to.append( (to, cfg['keymap'][to]) )
 		else:
 			if verbose:
 				log("Recipient (%s) not in PGP domain list." % to)
