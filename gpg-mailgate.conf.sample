@@ -1,12 +1,22 @@
 [default]
-# whether gpg-mailgate should add a header after it has processed an email
-# this may be useful for debugging purposes
+# Whether gpg-mailgate should add a header after it has processed an email
+# This may be useful for debugging purposes
 add_header = yes
 
-# whether we should only sign emails if they are explicitly defined in
-# the key mappings below ([keymap] section)
-# this means gpg-mailgate won't automatically detect PGP recipients
-keymap_only = no
+# Whether we should only encrypt emails if they are explicitly defined in
+# the key mappings below ([enc_keymap] section)
+# This means gpg-mailgate won't automatically detect PGP recipients for encrypting
+enc_keymap_only = no
+
+# Whether we should only decrypt emails if they are explicitly defined in
+# the key mappings below ([dec_keymap] section)
+# This means gpg-mailgate won't automatically detect PGP recipients for decrypting
+dec_keymap_only = no
+
+# If dec_keymap_only is set to yes and recipients have private keys present for decrypting
+# but are not on in the keymap, this can cause that mails for them will be
+# encrypted. Set this to no if you want this behaviour.
+failsave_dec = yes
 
 # Convert encrypted text/plain email to MIME-attached encrypt style.
 # (Default is to use older inline-style PGP encoding.)
@@ -22,11 +32,11 @@ mail_case_insensitive = no
 [gpg]
 # the directory where gpg-mailgate public keys are stored
 # (see INSTALL for details)
-keyhome = /var/gpg/.gnupg
+keyhome = /var/gpgmailgate/.gnupg
 
 [smime]
 # the directory for the S/MIME certificate files
-cert_path = /var/smime/certs
+cert_path = /var/gpgmailgate/smime
 
 [mailregister]
 # settings for the register-handler
@@ -62,13 +72,23 @@ host = localhost
 username = gpgmw
 password = password
 
-[keymap]
+[enc_keymap]
 # You can find these by running the following command:
 #	gpg --list-keys --keyid-format long user@example.com
 # Which will return output similar to:
 #	pub   1024D/AAAAAAAAAAAAAAAA 2007-10-22
 #	uid                          Joe User <user@example.com>
 #	sub   2048g/BBBBBBBBBBBBBBBB 2007-10-22
+# You want the AAAAAAAAAAAAAAAA not BBBBBBBBBBBBBBBB.
+#you@domain.tld = 12345678
+
+[dec_keymap]
+# You can find these by running the following command:
+#	gpg --list-secret-keys --keyid-format long user@example.com
+# Which will return output similar to:
+#	sec   1024D/AAAAAAAAAAAAAAAA 2007-10-22
+#	uid                          Joe User <user@example.com>
+#	ssb   2048g/BBBBBBBBBBBBBBBB 2007-10-22
 # You want the AAAAAAAAAAAAAAAA not BBBBBBBBBBBBBBBB.
 #you@domain.tld = 12345678
 
