@@ -127,7 +127,7 @@ def gpg_decrypt_all_payloads( message ):
 
 	# At this point the message could only be PGP/INLINE encrypted, unencrypted or
 	# encrypted with a mechanism not covered by GPG-Mailgate
-	else:
+	elif get_bool_from_cfg('default', 'no_inline_dec', 'no'):
 		# Check if message is PGP/INLINE encrypted and has attachments (or unencrypted with attachments)
 		if message.is_multipart():
 
