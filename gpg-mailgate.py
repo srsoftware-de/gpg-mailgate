@@ -183,7 +183,7 @@ def decrypt_mime( decrypted_message ):
 				# Clear message's original payload and insert the decrypted payloads
 				decrypted_message.set_payload(list())
 				decrypted_message = generate_message_from_payloads( decrypted_payload, decrypted_message )
-				decrypted_message.preamble = "BLA"
+				decrypted_message.preamble = "This is a multi-part message in MIME format"
 			else:
 				decrypted_message.set_payload(decrypted_payload.get_payload())
 				decrypted_message.preamble = None
