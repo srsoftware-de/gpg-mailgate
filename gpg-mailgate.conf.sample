@@ -35,6 +35,14 @@ mail_case_insensitive = no
 # side effects. So if you want to take the risk set this to no.
 no_inline_dec = yes
 
+# Here you can define a regex for which the gateway should try to decrypt mails.
+# It could be used to define that decryption should be used for a wider range of
+# mail addresses e.g. a whole domain. No key is needed here. It is even active if 
+# dec_keymap is set to yes. If this feature should be disabled, don't leave it blank.
+# Set it to None. For further regex information please have a look at
+# https://docs.python.org/2/library/re.html
+dec_regex = None
+
 [gpg]
 # the directory where gpg-mailgate public keys are stored
 # (see INSTALL for details)
@@ -87,6 +95,22 @@ password = password
 #	sub   2048g/BBBBBBBBBBBBBBBB 2007-10-22
 # You want the AAAAAAAAAAAAAAAA not BBBBBBBBBBBBBBBB.
 #you@domain.tld = 12345678
+
+[enc_domain_keymap]
+# This seems to be similar to the [enc_keymap] section. However, you
+# can define default keys for a domain here. Entries in the enc_keymap
+# and individual keys stored on the system have a higher priority than
+# the default keys specified here.
+#
+#
+# You can find these by running the following command:
+#	gpg --list-keys --keyid-format long user@example.com
+# Which will return output similar to:
+#	pub   1024D/AAAAAAAAAAAAAAAA 2007-10-22
+#	uid                          Joe User <user@example.com>
+#	sub   2048g/BBBBBBBBBBBBBBBB 2007-10-22
+# You want the AAAAAAAAAAAAAAAA not BBBBBBBBBBBBBBBB.
+#domain.tld = 12345678
 
 [dec_keymap]
 # You can find these by running the following command:

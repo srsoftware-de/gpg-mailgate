@@ -80,11 +80,20 @@ def gpg_decrypt( raw_message, recipients ):
 
 	keys = GnuPG.private_keys( cfg['gpg']['keyhome'] )
 
+	if get_bool_from_cfg('default', 'dec_regex'):
+		dec_regex = cfg['default']['dec_regex']
+	else:
+		dec_regex = None
+
 	for fingerprint in keys:
 		keys[fingerprint] = sanitize_case_sense(keys[fingerprint])
 
 	for to in recipients:
 		if to in keys.values() and not get_bool_from_cfg('default', 'dec_keymap_only', 'yes'):
+			gpg_to.append(to)
+		# Is this recipient defined in regex for default decryption?
+		elif not (dec_regex is None) and not (re.match(dec_regex, to) is None):
+			log("Using default decrytion defined in dec_regex for recipient '%s'" % to)
 			gpg_to.append(to)
 		elif get_bool_from_cfg('dec_keymap', to):
 			log("Decrypt keymap has key '%s'" % cfg['dec_keymap'][to] )
@@ -302,12 +311,29 @@ def gpg_encrypt( raw_message, recipients ):
 			else:
 				log("Key '%s' in encrypt keymap not found in keyring for email address '%s'." % (cfg['enc_keymap'][to], to))
 
+		# Check if key in keychain is present
 		if to in keys.values() and not get_bool_from_cfg('default', 'enc_keymap_only', 'yes'):
 			gpg_to.append( (to, to) )
-		else:
-			if verbose:
-				log("Recipient (%s) not in PGP domain list for encrypting." % to)
-			ungpg_to.append(to)
+			continue
+
+		# Check if there is a default key for the domain
+		splitted_address = address.split('@')
+		if len(splitted_address) > 1:
+			domain = splitted_address[1]
+			if get_bool_from_cfg('enc_domain_keymap', domain):
+				log("Encrypt domain keymap has key '%s'" % cfg['enc_dec_keymap'][domain] )
+				# Check we've got a matching key!
+				if cfg['enc_domain_keymap'][domain] in keys:
+					log("Using default domain key for recipient '%s'" % to)
+					gpg_to.append( (to, cfg['enc_domain_keymap'][domain]) )
+					continue
+				else:
+					log("Key '%s' in encrypt domain keymap not found in keyring for email address '%s'." % (cfg['enc_domain_keymap'][domain], to))
+		
+		# At this point no key has been found
+		if verbose:
+			log("Recipient (%s) not in PGP domain list for encrypting." % to)
+		ungpg_to.append(to)
 
 	if gpg_to != list():
 		log("Encrypting email to: %s" % ' '.join( map(lambda x: x[0], gpg_to) ))
