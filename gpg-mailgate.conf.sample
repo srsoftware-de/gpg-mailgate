@@ -76,6 +76,9 @@ verbose = yes
 # unless you alter the default Postfix configuration, you won't have to modify this
 host = 127.0.0.1
 port = 10028
+# This is the default port of postfix. It is used to send some
+# mails through the GPG-Mailgate so they are encrypted
+enc_port = 25
 
 [database]
 # uncomment the settings below if you want

@@ -1,1 +1,1 @@
-Your PGP key has been imported successfully. Don't be worried if this mail is not encrypted. The following mails will be encrypted.
+Your PGP key has been imported successfully.
