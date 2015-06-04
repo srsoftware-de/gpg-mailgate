@@ -428,9 +428,11 @@ def encrypt_all_payloads_mime( message, gpg_to_cmdline ):
 		# Workaround it here by prepending a blank line.
 		# This happens only on text only messages.
 		submsg2.set_payload("\n" + message.get_payload())
+		check_nested = True
 	else:
 		processed_payloads = generate_message_from_payloads(message)
 		submsg2.set_payload(processed_payloads.as_string())
+		check_nested = False
 
 	message.preamble = "This is an OpenPGP/MIME encrypted message (RFC 2440 and 3156)"
 
@@ -445,12 +447,12 @@ def encrypt_all_payloads_mime( message, gpg_to_cmdline ):
 	else:
 		message['Content-Type'] = "multipart/encrypted; protocol=\"application/pgp-encrypted\";\nboundary=\"%s\"\n" % boundary
 
-	return [ submsg1, encrypt_payload(submsg2, gpg_to_cmdline) ]
+	return [ submsg1, encrypt_payload(submsg2, gpg_to_cmdline, check_nested) ]
 
-def encrypt_payload( payload, gpg_to_cmdline ):
+def encrypt_payload( payload, gpg_to_cmdline, check_nested = True ):
 
 	raw_payload = payload.get_payload(decode=True)
-	if "-----BEGIN PGP MESSAGE-----" in raw_payload and "-----END PGP MESSAGE-----" in raw_payload:
+	if check_nested and "-----BEGIN PGP MESSAGE-----" in raw_payload and "-----END PGP MESSAGE-----" in raw_payload:
 		if verbose:
 			log("Message is already pgp encrypted. No nested encryption needed.")
 		return payload
