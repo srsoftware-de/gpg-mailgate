@@ -124,8 +124,23 @@ if __name__ == "__main__":
 			sig = sign_part
 			payload = {'email': from_addr, 'key': sig}
 			r = requests.post(cfg['mailregister']['webpanel_url'], data=payload)
+
+			if r.status_code != 200:
+				log("Could not hand registration over to GPGMW. Error: %s" % r.status_code)
+				error_msg = file(cfg['mailregister']['mail_templates']+"/gpgmwFailed.md").read()
+				error_msg = error_msg.replace("[:FROMADDRESS:]",from_addr)
 			
-			log("PGP registration is handed over to GPGMW")
+				msg = MIMEMultipart("alternative")
+				msg["From"] = cfg['mailregister']['register_email']
+				msg["To"] = from_addr
+				msg["Subject"] = "PGP key registration failed"
+
+				msg.attach(MIMEText(error_msg, 'plain'))
+				msg.attach(MIMEText(markdown.markdown(error_msg), 'html'))
+			
+				send_msg(msg, cfg['mailregister']['register_email'], [from_addr])
+			else:
+				log("PGP registration is handed over to GPGMW")
 #	except:
 #		log("Registration exception")
 #		sys.exit(0)
