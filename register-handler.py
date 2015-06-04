@@ -28,9 +28,13 @@ def log(msg):
 CERT_PATH = cfg['smime']['cert_path']+"/"
 
 def send_msg( message, from_addr, recipients = None ):
-    relay = ("127.0.0.1", 10028)
-    smtp = smtplib.SMTP(relay[0], relay[1])
-    smtp.sendmail( from_addr, recipients, message.as_string() )
+    
+	if 'relay' in cfg and 'host' in cfg['relay'] and 'enc_port' in cfg['relay']:
+		relay = (cfg['relay']['host'], int(cfg['relay']['enc_port']))
+		smtp = smtplib.SMTP(relay[0], relay[1])
+		smtp.sendmail( from_addr, recipients, message.as_string() )
+	else:
+		log("Could not send mail due to wrong configuration")
 
 if __name__ == "__main__":
 #	try:
