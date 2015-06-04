@@ -317,9 +317,9 @@ def gpg_encrypt( raw_message, recipients ):
 			continue
 
 		# Check if there is a default key for the domain
-		splitted_address = address.split('@')
-		if len(splitted_address) > 1:
-			domain = splitted_address[1]
+		splitted_to = to.split('@')
+		if len(splitted_to) > 1:
+			domain = splitted_to[1]
 			if get_bool_from_cfg('enc_domain_keymap', domain):
 				log("Encrypt domain keymap has key '%s'" % cfg['enc_dec_keymap'][domain] )
 				# Check we've got a matching key!
