@@ -1,7 +1,5 @@
 # gpg-mailgate
 
-**Please note: This fork is currently WIP. It is not recommended for use at the moment.**
-
 gpg-mailgate is a content filter for Postfix that automatically encrypts unencrypted incoming email using PGP or S/MIME for select recipients. It is also able to decrypt incoming PGP mails.
 
 For installation instructions, please refer to the included INSTALL file.
@@ -10,7 +8,7 @@ For installation instructions, please refer to the included INSTALL file.
 - Correctly displays attachments and general email content; currently will only display first part of multipart messages
 - Public keys are stored in a dedicated gpg-home-directory
 - Encrypts both matching incoming and outgoing mail (this means gpg-mailgate can be used to encrypt outgoing mail for software that doesn't support PGP or S/MIME)
-- Decrypt PGP encrypted mails for present private keys (but no signature check and it does not always work with PGP/INLINE encrypted mails)
+- Decrypts PGP encrypted mails for present private keys (but no signature check and it does not always work with PGP/INLINE encrypted mails)
 - Easy installation
 - gpg-mailgate-web extension is a web interface allowing any user to upload PGP keys so that emails sent to them from your mail server will be encrypted (see gpg-mailgate-web directory for details)
 - people can submit their public key like to any keyserver to gpg-mailgate with the gpg-mailgate-web extension
@@ -37,8 +35,6 @@ This is a combined work of many developers and contributors:
 
 # To Do
 
-* clean up code
 * rename from gpg-mailgate to openpgp-s-mime-mailgate or something.....
 * find a better solution for an own user instead of the user `nobody`
 * make PGP/INLINE decryption more reliable
-* even more magical stuff
