@@ -292,10 +292,19 @@ def gpg_encrypt( raw_message, recipients ):
 		log("No valid entry for gpg keyhome. Encryption aborted.")
 		return recipients
 
-	keys = GnuPG.public_keys( cfg['gpg']['keyhome'] )
+	# get a mapping from fingerpints to emails
+	keys = GnuPG.public_keys( cfg['gpg']['keyhome'] ) 
+
 	for fingerprint in keys:
 		keys[fingerprint] = sanitize_case_sense(keys[fingerprint])
-
+	
+	# get a mapping form emails to fingerprins. better, since one fingerprint may belong to several emails
+	raw_emails = GnuPG.mails_public_keys( cfg['gpg']['keyhome'] )
+	
+        emails = list()
+        for email in raw_emails:
+            emails.append(sanitize_case_sense(email))
+	
 	gpg_to = list()
 	ungpg_to = list()
 
@@ -312,7 +321,7 @@ def gpg_encrypt( raw_message, recipients ):
 				log("Key '%s' in encrypt keymap not found in keyring for email address '%s'." % (cfg['enc_keymap'][to], to))
 
 		# Check if key in keychain is present
-		if to in keys.values() and not get_bool_from_cfg('default', 'enc_keymap_only', 'yes'):
+		if to in emails and not get_bool_from_cfg('default', 'enc_keymap_only', 'yes'):
 			gpg_to.append( (to, to) )
 			continue
 
