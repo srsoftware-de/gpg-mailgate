@@ -66,7 +66,8 @@ def public_keys( keyhome ):
 				continue
 			email = line.split('<')[1].split('>')[0]
 			fingerprint = line.split(':')[4]
-			keys[fingerprint] = email
+			if fingerprint:
+                            keys[fingerprint] = email
 	return keys
 
 # confirms a key has a given email address
