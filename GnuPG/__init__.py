@@ -52,7 +52,7 @@ def mails_public_keys ( keyhome ):
 			fingerprint = line.split(':')[4]
 			if fingerprint:
                             last_fingerprint = fingerprint
-			mails[email] = fingerprint
+			mails[email] = last_fingerprint
 	return mails
     
 def public_keys( keyhome ):
