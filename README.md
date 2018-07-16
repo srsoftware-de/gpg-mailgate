@@ -31,7 +31,8 @@ This is a combined work of many developers and contributors:
 * Bruce Markey - [GitHub](https://github.com/TheEd1tor)
 * Remko Tronçon - [GitHub](https://github.com/remko/phkp/)
 * Kiritan Flux [GitHub](https://github.com/kflux)
-* Fabian Krone [GitHub] (https://github.com/fkrone/gpg-mailgate)
+* Fabian Krone [GitHub](https://github.com/fkrone/gpg-mailgate)
+* Stephan Richter [GitHub](https://github.com/keawe-software/gpg-mailgate)
 
 # To Do
 
