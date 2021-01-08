@@ -549,6 +549,8 @@ def smime_encrypt( raw_message, recipients ):
 
 def get_cert_for_email( to_addr, cert_path ):
 
+        if not os.path.isdir(cert_path):
+            return None
 	files_in_directory = os.listdir(cert_path)
 	for filename in files_in_directory:
 		file_path = os.path.join(cert_path, filename)
