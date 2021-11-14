@@ -250,7 +250,7 @@ def decrypt_inline_with_attachments( payloads, success, message = None ):
 				# There was no encrypted payload found, so the original payload is attached
 				message.attach(payload)
 
- 	return message, success
+	return message, success
 
 def decrypt_inline_without_attachments( decrypted_message ):
 
@@ -301,9 +301,9 @@ def gpg_encrypt( raw_message, recipients ):
 	# get a mapping form emails to fingerprins. better, since one fingerprint may belong to several emails
 	raw_emails = GnuPG.mails_public_keys( cfg['gpg']['keyhome'] )
 	
-        emails = list()
-        for email in raw_emails:
-            emails.append(sanitize_case_sense(email))
+	emails = list()
+	for email in raw_emails:
+		emails.append(sanitize_case_sense(email))
 	
 	gpg_to = list()
 	ungpg_to = list()
@@ -450,7 +450,7 @@ def encrypt_all_payloads_mime( message, gpg_to_cmdline ):
 	junk_str = junk_msg.as_string()  # WTF!  Without this, get_boundary() will return 'None'!
 	boundary = junk_msg.get_boundary()
 
-    # This also modifies the boundary in the body of the message, ie it gets parsed.
+	# This also modifies the boundary in the body of the message, ie it gets parsed.
 	if message.has_key('Content-Type'):
 		message.replace_header('Content-Type', "multipart/encrypted; protocol=\"application/pgp-encrypted\";\nboundary=\"%s\"\n" % boundary)
 	else:
@@ -549,8 +549,8 @@ def smime_encrypt( raw_message, recipients ):
 
 def get_cert_for_email( to_addr, cert_path ):
 
-        if not os.path.isdir(cert_path):
-            return None
+	if not os.path.isdir(cert_path):
+		return None
 	files_in_directory = os.listdir(cert_path)
 	for filename in files_in_directory:
 		file_path = os.path.join(cert_path, filename)
